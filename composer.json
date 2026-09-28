@@ -1,0 +1,78 @@
+{
+    "name": "b10k/craft-component-map",
+    "description": "A map of how your Craft CMS templates fit together — pages, Matrix blocks, dispatchers, adapters, components — for developers and AI coding agents. Twig dependency graph, “where is this template used?”, and the impact of a change.",
+    "type": "craft-plugin",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "twig",
+        "templates",
+        "dependency graph",
+        "template map",
+        "matrix",
+        "page builder",
+        "components",
+        "ai agents",
+        "claude code",
+        "cursor",
+        "codex"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "b10k",
+            "homepage": "https://b10k.nl"
+        }
+    ],
+    "support": {
+        "docs": "https://github.com/b10k-nl/craft-component-map/blob/main/README.md",
+        "issues": "https://github.com/b10k-nl/craft-component-map/issues",
+        "source": "https://github.com/b10k-nl/craft-component-map"
+    },
+    "require": {
+        "php": ">=8.2",
+        "craftcms/cms": "^5.0.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "b10k\\componentmap\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "b10k\\componentmap\\tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "handle": "component-map",
+        "name": "Component Map",
+        "developer": "b10k",
+        "developerUrl": "https://b10k.nl",
+        "documentationUrl": "https://github.com/b10k-nl/craft-component-map/blob/main/README.md",
+        "changelogUrl": "https://github.com/b10k-nl/craft-component-map/blob/main/CHANGELOG.md",
+        "class": "b10k\\componentmap\\Plugin"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "check": [
+            "@test",
+            "@analyse"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "craftcms/plugin-installer": true,
+            "yiisoft/yii2-composer": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

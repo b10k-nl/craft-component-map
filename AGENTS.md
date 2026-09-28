@@ -1,0 +1,52 @@
+# Component Map — instructions for coding agents
+
+This file is for a coding agent working in a Craft CMS project that has the
+Component Map plugin installed. Use it before you change, move, rename or
+delete a Twig template.
+
+## Before you edit
+
+1. **Read `COMPONENT-MAP.md`** in the project root, if it exists. It lists
+   which template renders each page and each page-builder block, and for every
+   template what uses it and what it uses. If it is missing or looks out of
+   date, run `php craft component-map/build`.
+
+2. **Ask about the template you are about to touch:**
+
+   ```bash
+   php craft component-map/show _components/button --json
+   ```
+
+   - `usedBy` — every template that includes, embeds or extends it. Changing
+     its variables or blocks affects all of them.
+   - `affects.entryTypes` — the page-builder blocks (Matrix entry types) whose
+     rendering goes through it.
+   - `affects.pages` — the sections whose pages reach it.
+
+   `show` also takes an entry type handle (`hero`), a section (`home`) or a
+   Matrix field (`contentBlocks`).
+
+## After you edit
+
+3. **Check what you changed affects:**
+
+   ```bash
+   php craft component-map/impact --git --json
+   ```
+
+   Report `entryTypes` and `pages` to the human. If Component Check is
+   installed, test exactly those blocks:
+   `php craft component-check/test <entryTypes joined by commas> --json`.
+
+4. **`unmapped` files** (CSS, JS, PHP) are outside the template map. They can
+   affect anything; say so rather than assuming they do not.
+
+## Rules
+
+- A reference marked `dynamic` is resolved from a pattern
+  (`'_adapters/' ~ block.type.handle`). Renaming a file matched by it changes
+  which block type it renders — treat that as a content-model change.
+- Entries under “Not resolved” are references the map could not follow. Do not
+  assume nothing uses a template because the map shows no `usedBy`; search for
+  its name too.
+- Do not edit `COMPONENT-MAP.md` by hand; rebuild it.
