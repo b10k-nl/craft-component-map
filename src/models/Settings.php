@@ -10,11 +10,12 @@ use craft\base\Model;
 class Settings extends Model
 {
     /**
-     * @var string Where `component-map/build` writes the Markdown map. Commit
-     * it: it is the file a coding agent reads before touching templates.
-     * Empty = do not write Markdown.
+     * @var string Where `component-map/build` writes the Markdown map.
+     * Local by default (storage/ is not committed): every developer runs the
+     * plugin, and `show` / `impact` read the templates directly, so a
+     * committed copy would only go stale. Empty = do not write Markdown.
      */
-    public string $markdownFile = '@root/COMPONENT-MAP.md';
+    public string $markdownFile = '@storage/component-map/COMPONENT-MAP.md';
 
     /**
      * @var string Where `component-map/build` writes the full graph as JSON.

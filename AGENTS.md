@@ -6,10 +6,18 @@ delete a Twig template.
 
 ## Before you edit
 
-1. **Read `COMPONENT-MAP.md`** in the project root, if it exists. It lists
-   which template renders each page and each page-builder block, and for every
-   template what uses it and what it uses. If it is missing or looks out of
-   date, run `php craft component-map/build`.
+Use `ddev craft` instead of `php craft` if the project runs in DDEV. Every
+command reads the templates as they are now; there is no map file to find or
+rebuild first.
+
+1. **For an overview**, print the whole map:
+
+   ```bash
+   php craft component-map/build --stdout
+   ```
+
+   It lists which template renders each page and each page-builder block, and
+   for every template what uses it and what it uses.
 
 2. **Ask about the template you are about to touch:**
 
@@ -49,4 +57,5 @@ delete a Twig template.
 - Entries under “Not resolved” are references the map could not follow. Do not
   assume nothing uses a template because the map shows no `usedBy`; search for
   its name too.
-- Do not edit `COMPONENT-MAP.md` by hand; rebuild it.
+- Do not commit the map (`build` output or anything in
+  `storage/component-map/`); it is generated locally.

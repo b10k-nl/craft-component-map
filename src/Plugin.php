@@ -14,8 +14,9 @@ use craft\base\Plugin as BasePlugin;
  * developers and coding agents.
  *
  * Console only and read-only: it reads templates and the content model's
- * schema (never entries), writes nothing outside the files it is asked to,
- * and exposes nothing over HTTP. Safe to install on every environment.
+ * schema (never entries), writes only to storage/ (and to AGENTS.md when
+ * asked, by `component-map/agents`), and exposes nothing over HTTP.
+ * Meant for local development.
  *
  * @method Settings getSettings()
  */

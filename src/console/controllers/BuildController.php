@@ -9,8 +9,10 @@ use craft\helpers\FileHelper;
 use craft\helpers\Json;
 
 /**
- * Builds the map and writes it: Markdown for people and agents
- * (COMPONENT-MAP.md), JSON for tools.
+ * Builds the map and writes a snapshot of it to storage/: Markdown for people
+ * and agents, JSON for tools. Nothing here is meant to be committed — `show`
+ * and `impact` build the map from the current templates on every call and
+ * never read these files.
  *
  *     php craft component-map/build
  *     php craft component-map/build --json      # the whole graph to stdout, writes nothing
@@ -39,7 +41,7 @@ class BuildController extends BaseController
             return self::EXIT_OK;
         }
 
-        $markdown = (new MarkdownWriter())->write($graph, (string)Craft::$app->getSystemName());
+        $markdown = (new MarkdownWriter())->write($graph, (string)Craft::$app->getSystemName(), $plugin->getMap()->craftCommand());
 
         if ($this->stdout) {
             $this->stdout($markdown . "\n");
@@ -58,16 +60,11 @@ class BuildController extends BaseController
             $written[] = $path;
         }
 
-        $this->stdout(sprintf(
-            "%d templates, %d sections, %d Matrix fields, %d entry types.\n",
-            count($graph->nodes('template')),
-            count($graph->nodes('section')),
-            count($graph->nodes('field')),
-            count($graph->nodes('entryType')),
-        ), Console::FG_GREY);
+        $this->stdout(MarkdownWriter::counts($graph, ', ') . ".\n", Console::FG_GREY);
         foreach ($written as $path) {
             $this->stdout("Wrote {$path}\n", Console::FG_GREEN);
         }
+        $this->stdout("show and impact read the templates directly — no need to rebuild before them.\n", Console::FG_GREY);
 
         $unresolved = count($graph->unresolved());
         if ($unresolved > 0) {

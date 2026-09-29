@@ -24,9 +24,10 @@ A change affects pages
   home
 ```
 
-It writes a `COMPONENT-MAP.md` a coding agent can read before touching
-anything, and answers “where is this used?” and “what does this change
-affect?” from the command line, as text or JSON.
+It answers “where is this used?” and “what does this change affect?” from
+the command line, as text or JSON — built from your templates as they are
+right now, on every call. It runs where you develop: nothing is generated
+into the repository, so there is no map to commit, keep up to date or merge.
 
 > **Status:** `0.1.0-dev` — first working draft. Free (MIT).
 
@@ -63,20 +64,25 @@ Craft CMS 5, PHP 8.2+. Nothing else — no Node.
 ```bash
 composer require b10k/craft-component-map
 php craft plugin/install component-map
-php craft component-map/build
+php craft component-map/agents --file=AGENTS.md    # optional: tell your coding agent
 ```
 
 Read-only and console-only: it reads templates and the content model's
-schema, writes only the files it is asked to, and exposes nothing over HTTP.
-Safe to install on every environment.
+schema, writes only to `storage/` (and to `AGENTS.md` when you ask it to),
+and exposes nothing over HTTP. It is meant for local development — where you
+and your coding agent edit templates — not for staging or production.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `component-map/build` | Writes `COMPONENT-MAP.md` (commit it) and `storage/component-map/graph.json`. `--stdout` prints the Markdown instead; `--json` prints the whole graph. |
 | `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, and what it uses. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
 | `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes. `--json`. |
+| `component-map/build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
+| `component-map/agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
+
+`show` and `impact` read the templates on every call — there is nothing to
+rebuild first.
 
 Exit codes: `0` ok · `1` not found · `2` could not run.
 
@@ -122,8 +128,19 @@ php craft component-check/test $(php craft component-map/impact --git --json | j
 
 ## For coding agents
 
-Point your agent at `COMPONENT-MAP.md` (or add a line to `CLAUDE.md` /
-`AGENTS.md`), and at [AGENTS.md](AGENTS.md) in this package for the commands.
+The map is not a file in your repository, so an agent will not find it by
+searching. Tell it once:
+
+```bash
+php craft component-map/agents --file=AGENTS.md    # or CLAUDE.md
+```
+
+That adds a short note — between `<!-- component-map -->` markers, so running
+it again updates it instead of adding a second copy — telling the agent to run
+`show` before editing a template and `impact --git` after. It uses `ddev craft`
+when the project runs in DDEV. The note does not change when your templates
+do, so it is safe to commit. The full instructions are in
+[AGENTS.md](AGENTS.md) in this package.
 
 ## Configuration
 
@@ -131,8 +148,8 @@ Point your agent at `COMPONENT-MAP.md` (or add a line to `CLAUDE.md` /
 
 | Setting | Default | |
 |---|---|---|
-| `markdownFile` | `@root/COMPONENT-MAP.md` | Empty = do not write Markdown |
-| `jsonFile` | `@storage/component-map/graph.json` | Empty = do not write JSON |
+| `markdownFile` | `@storage/component-map/COMPONENT-MAP.md` | Where `build` writes Markdown. Empty = do not write it |
+| `jsonFile` | `@storage/component-map/graph.json` | Where `build` writes JSON. Empty = do not write it |
 | `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
 
 ## Limitations (v0.1)

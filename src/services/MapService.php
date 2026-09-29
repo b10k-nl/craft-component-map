@@ -43,6 +43,16 @@ class MapService extends Component
         return new Explorer($this->graph());
     }
 
+    /**
+     * How to run Craft in this project, for the commands the plugin prints:
+     * `ddev craft` when it runs in DDEV, otherwise `php craft`.
+     */
+    public function craftCommand(): string
+    {
+        $root = (string)Craft::getAlias('@root');
+        return getenv('IS_DDEV_PROJECT') === 'true' || is_file($root . '/.ddev/config.yaml') ? 'ddev craft' : 'php craft';
+    }
+
     public function templatesPath(): string
     {
         return rtrim(Craft::$app->getPath()->getSiteTemplatesPath(), '/\\');

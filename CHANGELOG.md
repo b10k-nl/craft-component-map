@@ -18,11 +18,16 @@ First working draft.
   Matrix fields and the block types they allow, category groups.
 - Dispatcher detection: a dynamic include resolving to a file named after an
   entry type links that entry type to its template.
-- `component-map/build` — writes `COMPONENT-MAP.md` for people and agents, and
-  `graph.json`.
+- `component-map/build` — the whole map as Markdown (`--stdout`) or JSON
+  (`--json`); otherwise a local snapshot in `storage/component-map/`. Nothing
+  is written into the repository: the plugin runs where you develop and
+  `show` / `impact` build the map from the current templates on every call.
 - `component-map/show` — where a template, entry type, section or field is
   used, what it uses, which blocks and pages a change affects.
 - `component-map/impact` — what changing files affects; `--git` for
   uncommitted changes. Reports entry type handles ready for
   `component-check/test`.
+- `component-map/agents` — the note that points a coding agent to the
+  commands; `--file=AGENTS.md` / `CLAUDE.md` adds or updates it between
+  markers. Uses `ddev craft` in DDEV projects.
 - `--json` on every command; stable exit codes.

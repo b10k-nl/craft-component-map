@@ -8,9 +8,10 @@
  */
 
 return [
-    // Where `component-map/build` writes the Markdown map. Commit it: it is
-    // the file a coding agent reads before touching templates. '' = skip.
-    'markdownFile' => '@root/COMPONENT-MAP.md',
+    // Where `component-map/build` writes the Markdown map. Local by default:
+    // `show` and `impact` read the templates directly, so there is nothing to
+    // commit. '' = skip.
+    'markdownFile' => '@storage/component-map/COMPONENT-MAP.md',
 
     // Where `component-map/build` writes the full graph as JSON. '' = skip.
     'jsonFile' => '@storage/component-map/graph.json',

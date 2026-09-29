@@ -124,5 +124,8 @@ class GraphTest extends TestCase
         $this->assertStringContainsString("### `_components/button.twig`\n\n- used by: `_components/card.twig`, `_components/hero.twig` (include())", $md);
         $this->assertStringContainsString('- a change affects: blocks `cardsGrid`, `hero`; pages `home`, `news`', $md);
         $this->assertStringContainsString('## Not resolved', $md);
+        $this->assertStringContainsString(' · 2 sections · 2 Matrix fields · 5 entry types', $md);
+        $this->assertStringContainsString('php craft component-map/impact --git', $md);
+        $this->assertStringContainsString('ddev craft component-map/impact --git', $writer->write($this->graph(), '', 'ddev craft'));
     }
 }
