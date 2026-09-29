@@ -29,7 +29,7 @@ the command line, as text or JSON — built from your templates as they are
 right now, on every call. It runs where you develop: nothing is generated
 into the repository, so there is no map to commit, keep up to date or merge.
 
-> **Status:** `0.1.0-dev` — first working draft. Free (MIT).
+> Free (MIT). Craft CMS 5, for local development.
 
 ---
 
@@ -190,7 +190,7 @@ do, so it is safe to commit. The full instructions are in
 | `readEntries` | `true` | List the entries that contain affected blocks. `false` = templates and schema only |
 | `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
 
-## Limitations (v0.1)
+## Limitations
 
 - **Static only.** A reference whose target is decided at runtime (a variable
   from a field, a plugin's template) is listed as unresolved. Recording which

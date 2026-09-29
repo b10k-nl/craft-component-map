@@ -3,9 +3,9 @@
 All notable changes to Component Map are documented here. This project adheres
 to [Semantic Versioning](https://semver.org).
 
-## Unreleased
+## 1.0.0 - 2026-09-29
 
-First working draft.
+First release.
 
 ### Added
 
