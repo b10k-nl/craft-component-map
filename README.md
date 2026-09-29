@@ -43,14 +43,18 @@ into the repository, so there is no map to commit, keep up to date or merge.
   block.type.handle ~ '.twig', '_adapters/undefined.twig'] %}` becomes the
   pattern `_adapters/*.twig`, resolved against the files that exist, plus a
   fallback. `{% extends ajax ? '_bare' : '_site' %}` links to both.
-- **The content model** (schema only, never entries): sections and the
-  template each renders with, entry types, Matrix fields and the block types
-  they allow, category groups.
+- **The content model**: sections and the template each renders with, entry
+  types, Matrix fields and the block types they allow, category groups.
 - **The link between them that generic tools cannot see.** A dynamic include
   that resolves to a file named after an entry type — `_adapters/hero.twig` for
   entry type `hero` — is recorded as “a Hero block is rendered by this
   template, via this dispatcher”. So the map knows which blocks a component
   change affects, not only which files include it.
+
+- **Which entries use which blocks** — read from Craft's ownership table, at
+  any depth of nesting. So `impact` ends with the actual pages to open in the
+  browser, and `show hero` tells you where the Hero block is used — or that
+  no entry uses it yet.
 
 What it cannot resolve (an include of a bare variable, a missing template) is
 listed under **Not resolved**, not silently dropped.
@@ -67,8 +71,9 @@ php craft plugin/install component-map
 php craft component-map/agents --file=AGENTS.md    # optional: tell your coding agent
 ```
 
-Read-only and console-only: it reads templates and the content model's
-schema, writes only to `storage/` (and to `AGENTS.md` when you ask it to),
+Read-only and console-only: it reads templates, the content model and which
+entries contain which blocks (canonical content only — no drafts or
+revisions; turn it off with `readEntries`), writes only to `storage/` (and to `AGENTS.md` when you ask it to),
 and exposes nothing over HTTP. It is meant for local development — where you
 and your coding agent edit templates — not for staging or production.
 
@@ -76,7 +81,7 @@ and your coding agent edit templates — not for staging or production.
 
 | Command | What it does |
 |---|---|
-| `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, and what it uses. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
+| `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, what it uses, and for a block the entries it is on. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
 | `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes; `--since=main` everything that changed on your branch, committed or not. `--json`. |
 | `component-map/build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
 | `component-map/agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
@@ -95,8 +100,13 @@ Blocks (entry types) affected
   cardsGrid
 
 Pages affected
-  home
-  news
+  home   (entries with these blocks)
+  news   (entries with these blocks)
+
+Entries to check (3)
+  Home              https://example.test/                cardsGrid
+  Our studios       https://example.test/studios         cardsGrid
+  Spring timetable  https://example.test/news/spring     cardsGrid
 
 Templates affected
   _adapters/cardsGrid.twig
@@ -112,6 +122,11 @@ Content model changed (project config)
 Other files — not analysed (CSS, JS and PHP can affect any page)
   web/dist/app.css
 ```
+
+**Entries to check** are the pages to open: every entry that contains an
+affected block (however deeply nested), and every entry of a section whose
+page template, layout or a component they include changed. Entries that are
+not live say so (`disabled`, `pending`, `expired`). `--limit=0` lists all.
 
 A block is affected when a changed file is on its render path: its adapter,
 anything the adapter includes, and the dispatcher, page templates and layouts
@@ -172,6 +187,7 @@ do, so it is safe to commit. The full instructions are in
 |---|---|---|
 | `markdownFile` | `@storage/component-map/COMPONENT-MAP.md` | Where `build` writes Markdown. Empty = do not write it |
 | `jsonFile` | `@storage/component-map/graph.json` | Where `build` writes JSON. Empty = do not write it |
+| `readEntries` | `true` | List the entries that contain affected blocks. `false` = templates and schema only |
 | `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
 
 ## Limitations (v0.1)

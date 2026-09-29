@@ -16,6 +16,10 @@ return [
     // Where `component-map/build` writes the full graph as JSON. '' = skip.
     'jsonFile' => '@storage/component-map/graph.json',
 
+    // List the entries (with URLs) that contain the affected blocks, in
+    // `impact` and `show`. Read-only. false = templates and schema only.
+    'readEntries' => true,
+
     // Glob patterns (relative to templates/) left out of the map.
     'ignore' => ['*.stories.twig'],
 ];

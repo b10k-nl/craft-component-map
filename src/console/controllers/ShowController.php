@@ -13,6 +13,11 @@ use craft\helpers\Console;
  */
 class ShowController extends BaseController
 {
+    public function options($actionID): array
+    {
+        return array_merge(parent::options($actionID), ['limit']);
+    }
+
     /**
      * @param string $query A template path, or an entry type / section / field handle.
      */
@@ -26,6 +31,20 @@ class ShowController extends BaseController
         }
 
         $d = $explorer->describe($id);
+
+        $d['entries'] = null;
+        $index = $this->content();
+        if ($index !== null) {
+            $handle = self::short($id);
+            $ids = match ($d['node']['kind']) {
+                'entryType' => $d['allowedIn'] !== [] ? $index->containing($handle) : $index->ofType($handle),
+                'section' => $index->inSection($handle),
+                default => null,
+            };
+            if ($ids !== null) {
+                $d['entries'] = $this->describeEntries(array_fill_keys($ids, []), $this->json ? 0 : $this->limit);
+            }
+        }
 
         if ($this->json) {
             $this->writeJson($d);
@@ -73,6 +92,12 @@ class ShowController extends BaseController
                 $list('Rendered by', $rendered);
                 $list('Its Matrix fields', $d['fields']);
                 $list('On pages (sections)', array_map([self::class, 'short'], $d['pagesUsingIt']));
+                if ($d['entries'] !== null && $d['entries']['total'] === 0 && $d['allowedIn'] !== []) {
+                    $this->stdout("Used on entries\n", Console::FG_YELLOW);
+                    $this->stdout("  none — no entry uses this block yet\n\n");
+                } elseif ($d['entries'] !== null) {
+                    $this->printEntries($d['allowedIn'] !== [] ? 'Used on entries' : 'Entries of this type', $d['entries']);
+                }
                 break;
             case 'section':
             case 'categoryGroup':
@@ -85,6 +110,9 @@ class ShowController extends BaseController
                 }
                 $list('Page template', $tpls);
                 $list('Entry types', $d['entryTypes'] ?? []);
+                if ($d['entries'] !== null) {
+                    $this->printEntries('Entries', $d['entries']);
+                }
                 break;
             case 'field':
                 $list('Allows blocks', $d['allows']);

@@ -3,6 +3,7 @@
 namespace b10k\componentmap;
 
 use b10k\componentmap\models\Settings;
+use b10k\componentmap\services\CraftContent;
 use b10k\componentmap\services\CraftStructure;
 use b10k\componentmap\services\MapService;
 use Craft;
@@ -14,7 +15,8 @@ use craft\base\Plugin as BasePlugin;
  * developers and coding agents.
  *
  * Console only and read-only: it reads templates and the content model's
- * schema (never entries), writes only to storage/ (and to AGENTS.md when
+ * schema, and — to list the pages to check — which entries contain which
+ * blocks. It writes only to storage/ (and to AGENTS.md when
  * asked, by `component-map/agents`), and exposes nothing over HTTP.
  * Meant for local development.
  *
@@ -32,6 +34,7 @@ class Plugin extends BasePlugin
             'components' => [
                 'map' => MapService::class,
                 'craftStructure' => CraftStructure::class,
+                'craftContent' => CraftContent::class,
             ],
         ];
     }
@@ -56,6 +59,13 @@ class Plugin extends BasePlugin
     {
         /** @var CraftStructure $service */
         $service = $this->get('craftStructure');
+        return $service;
+    }
+
+    public function getCraftContent(): CraftContent
+    {
+        /** @var CraftContent $service */
+        $service = $this->get('craftContent');
         return $service;
     }
 

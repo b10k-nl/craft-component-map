@@ -103,6 +103,19 @@ class GraphTest extends TestCase
         $this->assertSame(['page.twig'], $impact['templates']);
     }
 
+    public function testAWholePageOnlyWhenTheChangeIsOutsideTheBlocks(): void
+    {
+        $e = new Explorer($this->graph());
+
+        $card = $e->impact(['_components/card.twig']);
+        $this->assertSame(['section:home', 'section:news'], $card['pages']);
+        $this->assertSame([], $card['wholePages'], 'only entries that contain a Cards Grid');
+
+        $this->assertSame(['section:home', 'section:news'], $e->impact(['_layouts/site.twig'])['wholePages']);
+        $this->assertSame(['section:home'], $e->impact(['index.twig'])['wholePages']);
+        $this->assertSame(['section:home'], $e->impact([], [], ['section:home'])['wholePages']);
+    }
+
     public function testContentModelChangesReachBlocksAndPages(): void
     {
         $e = new Explorer($this->graph());

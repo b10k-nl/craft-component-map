@@ -23,6 +23,13 @@ class Settings extends Model
     public string $jsonFile = '@storage/component-map/graph.json';
 
     /**
+     * @var bool Look up which entries contain the affected blocks, so `impact`
+     * and `show` can list the pages to check. Read-only; canonical content
+     * only. False = the map uses templates and the content model's schema only.
+     */
+    public bool $readEntries = true;
+
+    /**
      * @var string[] Glob patterns (relative to the templates folder) left out
      * of the map, e.g. Component Guide story files.
      */

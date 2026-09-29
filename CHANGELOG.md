@@ -14,6 +14,9 @@ First working draft.
   arrays of fallbacks, conditionals, `??`, and dynamic patterns such as
   `'_adapters/' ~ block.type.handle ~ '.twig'`, resolved against the files
   that exist. Files the lexer rejects still yield their static references.
+- Which entries contain which blocks, at any depth, from Craft's ownership
+  table (canonical content only; `readEntries` turns it off). `impact` lists
+  the entries to check with their URLs; `show` lists where a block is used.
 - The content model's schema: sections and their templates, entry types,
   Matrix fields and the block types they allow, category groups.
 - Dispatcher detection: a dynamic include resolving to a file named after an

@@ -46,8 +46,10 @@ rebuild first.
    branch instead: `php craft component-map/impact --since=main --json`
    (committed and uncommitted changes since the branch left `main`).
 
-   Report `entryTypes` and `pages` to the human — those are the blocks and
-   pages to check. `deleted` lists templates that are gone; the templates that
+   Report `entryTypes` and `pages` to the human, and give them the URLs in
+   `entriesToCheck.entries` — those are the pages to open in a browser
+   (`reasons`: the affected blocks on that entry, or `page` when the whole
+   page is affected). `deleted` lists templates that are gone; the templates that
    still reference them are in `templates` and will fail to render. If
    Component Check is installed, test exactly those blocks:
    `php craft component-check/test <entryTypes joined by commas> --json`.

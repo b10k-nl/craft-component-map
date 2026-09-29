@@ -64,7 +64,7 @@ final class Explorer
                 $this->graph->incoming($id, ['renders']),
             );
             $impact = $this->impact([$this->path($id)]);
-            $out['affects'] = ['entryTypes' => $impact['entryTypes'], 'pages' => $impact['pages']];
+            $out['affects'] = ['entryTypes' => $impact['entryTypes'], 'pages' => $impact['pages'], 'wholePages' => $impact['wholePages']];
             return $out;
         }
 
@@ -128,7 +128,11 @@ final class Explorer
      * @param string[] $paths Paths relative to the templates folder.
      * @param string[] $deleted Deleted files, relative to the templates folder.
      * @param string[] $contentModel Node ids of changed content model items: `entryType:hero`, `field:gridCards`.
-     * @return array{templates: string[], entryTypes: string[], pages: string[], contentModel: array<int, array{id: string, inMap: bool}>, deleted: string[], unmapped: string[]}
+     * - wholePages: of those, the ones affected on every entry — the change is in
+     *   the page template, its layout or anything they include outside the
+     *   block adapters — rather than only on entries that contain a block.
+     *
+     * @return array{templates: string[], entryTypes: string[], pages: string[], wholePages: string[], contentModel: array<int, array{id: string, inMap: bool}>, deleted: string[], unmapped: string[]}
      */
     public function impact(array $paths, array $deleted = [], array $contentModel = []): array
     {
@@ -177,12 +181,26 @@ final class Explorer
             }
         }
 
+        // Adapters: templates a block type is rendered by. A page reaches them
+        // only through its blocks, so a change inside one affects the pages
+        // that contain that block — not every page of the section.
+        $adapters = [];
+        foreach ($this->graph->nodes('entryType') as $typeId => $_) {
+            foreach ($this->graph->outgoing($typeId, ['renders']) as $e) {
+                $adapters[$e['to']] = true;
+            }
+        }
+
         $pages = [];
+        $wholePages = [];
         foreach ([...$this->graph->nodes('section'), ...$this->graph->nodes('categoryGroup')] as $pageId => $_) {
             foreach ($this->graph->outgoing($pageId, ['page']) as $e) {
                 $reach = array_fill_keys([$e['to'], ...$this->graph->descendants($e['to'])], true);
                 if (array_intersect_key($reach, $changed) !== []) {
                     $pages[$pageId] = true;
+                }
+                if (array_intersect_key($this->reachOutside($e['to'], $adapters), $changed) !== []) {
+                    $wholePages[$pageId] = true;
                 }
             }
         }
@@ -202,8 +220,12 @@ final class Explorer
             };
             if ($kind === 'section' || $kind === 'categoryGroup') {
                 $pages[$id] = true;
+                $wholePages[$id] = true;
             }
             foreach ($types as $typeId) {
+                foreach ($this->graph->incoming($typeId, ['hasType']) as $e) {
+                    $wholePages[$e['from']] = true; // a page type: every entry of the section
+                }
                 [$blocks, $typePages] = $this->upFrom($typeId);
                 foreach ($blocks as $b) {
                     $entryTypes[$this->handle($b)] = true;
@@ -221,11 +243,14 @@ final class Explorer
         sort($entryTypeHandles);
         $pageIds = array_keys($pages);
         sort($pageIds);
+        $wholePageIds = array_keys($wholePages);
+        sort($wholePageIds);
 
         return [
             'templates' => $templatePaths,
             'entryTypes' => $entryTypeHandles,
             'pages' => $pageIds,
+            'wholePages' => $wholePageIds,
             'contentModel' => $modelChanges,
             'deleted' => $deletedTemplates,
             'unmapped' => $unmapped,
@@ -281,6 +306,27 @@ final class Explorer
     /**
      * @return string[] section:… ids
      */
+    /**
+     * Templates a page template reaches without going into block adapters.
+     *
+     * @param array<string, true> $adapters
+     * @return array<string, true>
+     */
+    private function reachOutside(string $from, array $adapters): array
+    {
+        $seen = [$from => true];
+        $queue = [$from];
+        while ($queue !== []) {
+            foreach ($this->graph->outgoing(array_shift($queue), Graph::TEMPLATE_EDGES) as $e) {
+                if (!isset($seen[$e['to']]) && !isset($adapters[$e['to']])) {
+                    $seen[$e['to']] = true;
+                    $queue[] = $e['to'];
+                }
+            }
+        }
+        return $seen;
+    }
+
     /**
      * From an entry type up through the content model: the blocks it is or is
      * nested in (entry types allowed in a Matrix field), and the sections and

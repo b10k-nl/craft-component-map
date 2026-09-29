@@ -32,7 +32,7 @@ class ImpactController extends BaseController
 
     public function options($actionID): array
     {
-        return array_merge(parent::options($actionID), ['git', 'since']);
+        return array_merge(parent::options($actionID), ['git', 'since', 'limit']);
     }
 
     /**
@@ -76,8 +76,15 @@ class ImpactController extends BaseController
         $impact['ignored'] = array_values(array_unique([...$changed['ignored'], ...$gone['ignored']]));
         $impact['unmapped'] = array_values(array_unique([...$impact['unmapped'], ...$changed['other'], ...$gone['other']]));
 
+        $entries = null;
+        $index = $this->content();
+        if ($index !== null) {
+            $wholeSections = array_map([self::class, 'short'], array_filter($impact['wholePages'], static fn($p) => str_starts_with($p, 'section:')));
+            $entries = $this->describeEntries($index->toCheck($impact['entryTypes'], $wholeSections), $this->json ? 0 : $this->limit);
+        }
+
         if ($this->json) {
-            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => $paths, 'deletedFiles' => $deleted] + $impact);
+            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => $paths, 'deletedFiles' => $deleted] + $impact + ['entriesToCheck' => $entries]);
             return self::EXIT_OK;
         }
 
@@ -92,7 +99,11 @@ class ImpactController extends BaseController
         };
 
         $section('Blocks (entry types) affected', $impact['entryTypes']);
-        $section('Pages affected', array_map([self::class, 'short'], $impact['pages']));
+        $whole = array_flip($impact['wholePages']);
+        $section('Pages affected', array_map(static fn($p) => self::short($p) . (isset($whole[$p]) ? '   (every entry)' : '   (entries with these blocks)'), $impact['pages']));
+        if ($entries !== null) {
+            $this->printEntries('Entries to check', $entries);
+        }
         $section('Templates affected', $impact['templates']);
         if ($impact['contentModel'] !== []) {
             $kinds = ['entryType' => 'entry type', 'field' => 'field', 'section' => 'section', 'categoryGroup' => 'category group'];
