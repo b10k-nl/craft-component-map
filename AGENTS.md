@@ -42,11 +42,22 @@ rebuild first.
    php craft component-map/impact --git --json
    ```
 
-   Report `entryTypes` and `pages` to the human. If Component Check is
-   installed, test exactly those blocks:
+   Before the work is handed over as a branch or pull request, check the whole
+   branch instead: `php craft component-map/impact --since=main --json`
+   (committed and uncommitted changes since the branch left `main`).
+
+   Report `entryTypes` and `pages` to the human — those are the blocks and
+   pages to check. `deleted` lists templates that are gone; the templates that
+   still reference them are in `templates` and will fail to render. If
+   Component Check is installed, test exactly those blocks:
    `php craft component-check/test <entryTypes joined by commas> --json`.
 
-4. **`unmapped` files** (CSS, JS, PHP) are outside the template map. They can
+4. **`contentModel`** lists entry types, Matrix fields and sections changed in
+   project config; their blocks and pages are already in `entryTypes` and
+   `pages`. **`ignored`** are templates the project leaves out of the map
+   (e.g. Component Guide stories).
+
+5. **`unmapped` files** (CSS, JS, PHP) are outside the template map. They can
    affect anything; say so rather than assuming they do not.
 
 ## Rules

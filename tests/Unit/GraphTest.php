@@ -79,6 +79,60 @@ class GraphTest extends TestCase
         $this->assertNotContains('_adapters/hero.twig', $impact['templates']);
     }
 
+    public function testDeletedTemplateCountsThroughWhatStillReferencesIt(): void
+    {
+        $templates = Fixtures::templates();
+        unset($templates['_components/button.twig']);
+        $graph = (new GraphBuilder())->build($templates, Fixtures::structure());
+
+        $impact = (new Explorer($graph))->impact([], ['_components/button.twig', 'web/dist/old.css']);
+
+        $this->assertSame(['_components/button.twig'], $impact['deleted']);
+        $this->assertSame(['cardsGrid', 'hero'], $impact['entryTypes'], 'card and hero still include the button');
+        $this->assertContains('_components/card.twig', $impact['templates']);
+        $this->assertNotContains('_components/button.twig', $impact['templates']);
+        $this->assertSame(['web/dist/old.css'], $impact['unmapped']);
+    }
+
+    public function testDeletedIndexTemplateMatchesItsFolderName(): void
+    {
+        $graph = (new GraphBuilder())->build(['page.twig' => '{% include "_nav" %}']);
+
+        $impact = (new Explorer($graph))->impact([], ['_nav/index.twig']);
+
+        $this->assertSame(['page.twig'], $impact['templates']);
+    }
+
+    public function testContentModelChangesReachBlocksAndPages(): void
+    {
+        $e = new Explorer($this->graph());
+
+        $nested = $e->impact([], [], ['entryType:card']);
+        $this->assertSame(['card', 'cardsGrid'], $nested['entryTypes'], 'a card is shown by the Cards Grid it sits in');
+        $this->assertSame(['section:home', 'section:news'], $nested['pages']);
+        $this->assertSame([], $nested['templates']);
+
+        $this->assertSame(['cardsGrid'], $e->impact([], [], ['field:gridCards'])['entryTypes'], 'a field change affects the types that have it');
+        $this->assertSame(['section:home'], $e->impact([], [], ['section:home'])['pages']);
+
+        $page = $e->impact([], [], ['entryType:page', 'field:reversed']);
+        $this->assertSame([], $page['entryTypes'], 'a page type is not a block');
+        $this->assertSame(['section:home', 'section:news'], $page['pages']);
+        $this->assertSame([['id' => 'entryType:page', 'inMap' => true], ['id' => 'field:reversed', 'inMap' => false]], $page['contentModel']);
+    }
+
+    public function testProjectConfigFilesNameTheirItem(): void
+    {
+        $uid = '2bc6bed3-4285-46ad-a4c7-23c36f85a971';
+        $this->assertSame('entryType:hero', Explorer::contentModelItem("config/project/entryTypes/hero--{$uid}.yaml"));
+        $this->assertSame('field:gridCards', Explorer::contentModelItem("config/project/fields/gridCards--{$uid}.yaml"));
+        $this->assertSame('section:home', Explorer::contentModelItem("/config/project/sections/home--{$uid}.yaml"));
+        $this->assertSame('entryType:hero', Explorer::contentModelItem("project/entryTypes/hero--{$uid}.yaml", 'project'));
+        $this->assertNull(Explorer::contentModelItem('config/project/project.yaml'));
+        $this->assertNull(Explorer::contentModelItem("config/project/siteGroups/default--{$uid}.yaml"));
+        $this->assertNull(Explorer::contentModelItem("templates/entryTypes/hero--{$uid}.yaml"));
+    }
+
     public function testImpactOfTheDispatcherOrLayoutIsEveryBlock(): void
     {
         $e = new Explorer($this->graph());
@@ -96,6 +150,7 @@ class GraphTest extends TestCase
         $this->assertSame('_adapters/cardsGrid.twig', $d['renderedBy'][0]['template']);
         $this->assertSame(['_components/button.twig', '_components/card.twig', '_components/cards-grid.twig'], $d['renderedBy'][0]['uses']);
         $this->assertSame(['section:home', 'section:news'], $d['pagesUsingIt']);
+        $this->assertSame(['section:home', 'section:news'], $e->describe('entryType:card')['pagesUsingIt'], 'nested: through the Cards Grid');
 
         $quote = $e->describe('entryType:quote');
         $this->assertSame([], $quote['renderedBy'], 'allowed, but no adapter exists');

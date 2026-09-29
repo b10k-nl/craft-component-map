@@ -77,7 +77,7 @@ and your coding agent edit templates — not for staging or production.
 | Command | What it does |
 |---|---|
 | `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, and what it uses. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
-| `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes. `--json`. |
+| `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes; `--since=main` everything that changed on your branch, committed or not. `--json`. |
 | `component-map/build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
 | `component-map/agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
 
@@ -106,10 +106,11 @@ Templates affected
   index.twig
   news/_entry.twig
 
-Not templates (CSS, JS, PHP…) — may affect anything
-  web/dist/app.css
+Content model changed (project config)
+  entry type card
 
-Test them: php craft component-check/test cardsGrid
+Other files — not analysed (CSS, JS and PHP can affect any page)
+  web/dist/app.css
 ```
 
 A block is affected when a changed file is on its render path: its adapter,
@@ -117,13 +118,34 @@ anything the adapter includes, and the dispatcher, page templates and layouts
 above it. So changing a card component affects Cards Grid, not Hero — and
 changing the layout affects every block.
 
-## With Component Check
+Changes to the content model count too. A project config file such as
+`config/project/entryTypes/card--….yaml` is read as “entry type Card changed”:
+it affects the Card block, the Cards Grid it sits in, and the pages that show
+them. The same goes for Matrix fields, sections and category groups — the link
+between content and templates is what the map is for. Templates left out by
+the `ignore` setting (Component Guide stories) are listed separately.
 
-[Component Check](https://github.com/b10k-nl/craft-component-check) tests
-blocks in a browser, by entry type handle — exactly what `impact` reports:
+Before you open a pull request, check the whole branch — what you committed
+and what you have not yet:
 
 ```bash
-php craft component-check/test $(php craft component-map/impact --git --json | jq -r '.entryTypes | join(",")')
+php craft component-map/impact --since=main
+```
+
+It compares with the point where your branch left `main`, so work merged into
+`main` since then is not counted. A deleted template is reported as deleted,
+and counts through the templates that still reference it: they now break.
+The list of blocks and pages is what to check in the browser.
+
+## With Component Check
+
+Component Map is useful on its own. If you also use
+[Component Check](https://github.com/b10k-nl/craft-component-check), which
+tests blocks in a browser by entry type handle, `impact` prints the command
+to test exactly the affected blocks, and you can chain them:
+
+```bash
+php craft component-check/test $(php craft component-map/impact --since=main --json | jq -r '.entryTypes | join(",")')
 ```
 
 ## For coding agents

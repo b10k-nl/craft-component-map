@@ -2,6 +2,7 @@
 
 namespace b10k\componentmap\console\controllers;
 
+use Craft;
 use craft\helpers\Console;
 
 /**
@@ -11,10 +12,10 @@ use craft\helpers\Console;
  *     php craft component-map/impact templates/_components/card.twig
  *     php craft component-map/impact _components/card,_blocks/hero
  *     php craft component-map/impact --git            # uncommitted changes
- *     php craft component-map/impact --git --json
+ *     php craft component-map/impact --since=main     # the whole branch, committed or not
+ *     php craft component-map/impact --since=main --json
  *
- * The `entryTypes` it reports are the component handles Component Check
- * tests: `component-check/test $(…)`.
+ * A deleted template counts through the templates that still reference it.
  */
 class ImpactController extends BaseController
 {
@@ -23,9 +24,15 @@ class ImpactController extends BaseController
      */
     public bool $git = false;
 
+    /**
+     * @var string A branch, tag or commit: use everything that changed since this
+     * branch left it — commits on this branch plus uncommitted changes.
+     */
+    public string $since = '';
+
     public function options($actionID): array
     {
-        return array_merge(parent::options($actionID), ['git']);
+        return array_merge(parent::options($actionID), ['git', 'since']);
     }
 
     /**
@@ -34,28 +41,52 @@ class ImpactController extends BaseController
     public function actionIndex(string $files = ''): int
     {
         $map = $this->plugin()->getMap();
+        $since = trim($this->since);
 
         $paths = array_values(array_filter(array_map('trim', explode(',', $files)), static fn($p) => $p !== ''));
-        if ($this->git) {
-            $changed = $map->gitChangedFiles();
-            if ($changed === null) {
+        $deleted = [];
+        $base = null;
+        if ($this->git || $since !== '') {
+            try {
+                $changes = $map->gitChanges($since !== '' ? $since : null);
+            } catch (\RuntimeException $e) {
+                return $this->error($e->getMessage());
+            }
+            if ($changes === null) {
                 return $this->error('Not a git checkout (or git is not available here).');
             }
-            $paths = [...$paths, ...$changed];
+            $paths = [...$paths, ...$changes['changed']];
+            $deleted = $changes['deleted'];
+            $base = $changes['base'];
         }
-        if ($paths === []) {
-            return $this->error('Name the files, or use --git.', self::EXIT_ERROR);
+        if ($paths === [] && $deleted === []) {
+            if ($this->git || $since !== '') {
+                return $this->nothingChanged($since, $base);
+            }
+            return $this->error('Name the files, or use --git or --since=<branch>.');
         }
 
-        $impact = $map->explorer()->impact($map->toTemplatePaths($paths));
+        $changed = $map->classify($paths);
+        $gone = $map->classify($deleted);
+        $impact = $map->explorer()->impact(
+            $changed['templates'],
+            $gone['templates'],
+            [...$changed['contentModel'], ...$gone['contentModel']],
+        );
+        $impact['ignored'] = array_values(array_unique([...$changed['ignored'], ...$gone['ignored']]));
+        $impact['unmapped'] = array_values(array_unique([...$impact['unmapped'], ...$changed['other'], ...$gone['other']]));
 
         if ($this->json) {
-            $this->writeJson(['status' => 'ok', 'files' => $paths] + $impact);
+            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => $paths, 'deletedFiles' => $deleted] + $impact);
             return self::EXIT_OK;
         }
 
-        $section = function (string $title, array $items): void {
-            $this->stdout("{$title}\n", Console::FG_YELLOW);
+        if ($since !== '') {
+            $this->stdout("Changes since {$since}" . ($base ? ' (from ' . substr($base, 0, 7) . ')' : '') . ", committed or not\n\n", Console::FG_GREY);
+        }
+
+        $section = function (string $title, array $items, ?int $color = Console::FG_YELLOW): void {
+            $this->stdout("{$title}\n", $color);
             $this->stdout($items === [] ? "  —\n" : '  ' . implode("\n  ", $items) . "\n");
             $this->stdout("\n");
         };
@@ -63,14 +94,37 @@ class ImpactController extends BaseController
         $section('Blocks (entry types) affected', $impact['entryTypes']);
         $section('Pages affected', array_map([self::class, 'short'], $impact['pages']));
         $section('Templates affected', $impact['templates']);
+        if ($impact['contentModel'] !== []) {
+            $kinds = ['entryType' => 'entry type', 'field' => 'field', 'section' => 'section', 'categoryGroup' => 'category group'];
+            $section('Content model changed (project config)', array_map(static function(array $c) use ($kinds): string {
+                [$kind, $handle] = explode(':', $c['id'], 2);
+                return ($kinds[$kind] ?? $kind) . " {$handle}" . ($c['inMap'] ? '' : ($kind === 'field' ? '   (not a Matrix field — not in the map)' : '   (not in the map)'));
+            }, $impact['contentModel']));
+        }
+        if ($impact['deleted'] !== []) {
+            $section('Deleted templates — whatever still references them now breaks', $impact['deleted']);
+        }
+        if ($impact['ignored'] !== []) {
+            $section('Templates left out of the map (ignore setting)', $impact['ignored'], Console::FG_GREY);
+        }
         if ($impact['unmapped'] !== []) {
-            $section('Not templates (CSS, JS, PHP…) — may affect anything', $impact['unmapped']);
+            $section('Other files — not analysed (CSS, JS and PHP can affect any page)', $impact['unmapped'], Console::FG_GREY);
         }
 
-        if ($impact['entryTypes'] !== []) {
-            $this->stdout('Test them: php craft component-check/test ' . implode(',', $impact['entryTypes']) . "\n", Console::FG_GREY);
+        if ($impact['entryTypes'] !== [] && Craft::$app->getPlugins()->isPluginEnabled('component-check')) {
+            $this->stdout('Test them: ' . $map->craftCommand() . ' component-check/test ' . implode(',', $impact['entryTypes']) . "\n", Console::FG_GREY);
         }
 
+        return self::EXIT_OK;
+    }
+
+    private function nothingChanged(string $since, ?string $base): int
+    {
+        if ($this->json) {
+            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => [], 'deletedFiles' => [], 'templates' => [], 'entryTypes' => [], 'pages' => [], 'contentModel' => [], 'deleted' => [], 'ignored' => [], 'unmapped' => []]);
+        } else {
+            $this->stdout(($since !== '' ? "Nothing changed since {$since}." : 'No uncommitted changes.') . "\n");
+        }
         return self::EXIT_OK;
     }
 }

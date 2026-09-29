@@ -25,8 +25,14 @@ First working draft.
 - `component-map/show` — where a template, entry type, section or field is
   used, what it uses, which blocks and pages a change affects.
 - `component-map/impact` — what changing files affects; `--git` for
-  uncommitted changes. Reports entry type handles ready for
-  `component-check/test`.
+  uncommitted changes, `--since=<branch>` for the whole branch (commits since
+  it left that branch, plus uncommitted changes). Deleted templates count
+  through the templates that still reference them. Project config changes
+  (entry types, Matrix fields, sections, category groups) count through the
+  content model: a nested block affects the blocks it sits in and their pages.
+  Templates excluded by `ignore` are listed separately. Suggests
+  `component-check/test` for the affected blocks when Component Check is
+  installed.
 - `component-map/agents` — the note that points a coding agent to the
   commands; `--file=AGENTS.md` / `CLAUDE.md` adds or updates it between
   markers. Uses `ddev craft` in DDEV projects.
