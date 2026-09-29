@@ -4,8 +4,9 @@
 .phpunit.result.cache
 .DS_Store
 
-# Private planning notes
+# Private planning notes and Plugin Store listing assets
 docs/*.local.md
+docs/*.local/
 
 # Cowork session scratch.
 /Claude outputs
