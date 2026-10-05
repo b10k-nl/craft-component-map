@@ -30,6 +30,13 @@ class Settings extends Model
     public bool $readEntries = true;
 
     /**
+     * @var string[] Glob patterns (relative to the templates folder) of
+     * templates rendered from outside Twig — PHP, `config/routes.php`, a
+     * plugin setting — so `unused` does not report them. E.g. `_emails/*`.
+     */
+    public array $entryPoints = [];
+
+    /**
      * @var string[] Glob patterns (relative to the templates folder) left out
      * of the map, e.g. Component Guide story files.
      */
@@ -39,7 +46,7 @@ class Settings extends Model
     {
         return [
             [['markdownFile', 'jsonFile'], 'trim'],
-            ['ignore', 'each', 'rule' => ['string']],
+            [['ignore', 'entryPoints'], 'each', 'rule' => ['string']],
         ];
     }
 }

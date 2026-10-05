@@ -307,6 +307,118 @@ final class Explorer
      * @return string[] section:… ids
      */
     /**
+     * What nothing uses — for tidying a project.
+     *
+     * - blocks: entry types allowed in a Matrix field that no entry contains
+     *   (only when `$usage` is given — it comes from reading entries);
+     * - templates: templates nothing reaches. Roots are section and category
+     *   group page templates, templates Craft serves by URL (no path segment
+     *   starts with `_`) and `$entryPoints`; everything they include, embed,
+     *   extend or import is reached. `usedBy` lists the (themselves unreached)
+     *   templates that still reference one;
+     * - entryTypes: in no section and allowed in no Matrix field;
+     * - fields: Matrix fields on no entry type;
+     * - runtime: references in reached templates whose target is decided at
+     *   runtime — any unreached template might be used through them.
+     *
+     * @param array<string, int>|null $usage block type handle => entries it is on
+     * @param string[] $entryPoints Globs of templates rendered from elsewhere (PHP, routes, plugins).
+     * @return array{blocks: array<int, array{handle: string, allowedIn: string[]}>|null, templates: array<int, array{template: string, usedBy: string[]}>, entryTypes: string[], fields: string[], runtime: array<int, array{template: string, line: int, expression: string}>}
+     */
+    public function unused(?array $usage = null, array $entryPoints = []): array
+    {
+        $templates = [];
+        foreach ($this->graph->nodes('template') as $id => $_) {
+            if (preg_match('/\.(twig|html)$/i', $this->path($id))) {
+                $templates[$id] = true;
+            }
+        }
+
+        $roots = [];
+        foreach ([...$this->graph->nodes('section'), ...$this->graph->nodes('categoryGroup')] as $pageId => $_) {
+            foreach ($this->graph->outgoing($pageId, ['page']) as $e) {
+                $roots[$e['to']] = true;
+            }
+        }
+        foreach (array_keys($templates) as $id) {
+            $path = $this->path($id);
+            $routable = !preg_match('#(^|/)_#', $path);
+            $entryPoint = false;
+            foreach ($entryPoints as $glob) {
+                if (fnmatch($glob, $path)) {
+                    $entryPoint = true;
+                    break;
+                }
+            }
+            if ($routable || $entryPoint) {
+                $roots[$id] = true;
+            }
+        }
+
+        $reached = [];
+        foreach (array_keys($roots) as $root) {
+            $reached[$root] = true;
+            foreach ($this->graph->descendants($root) as $d) {
+                $reached[$d] = true;
+            }
+        }
+
+        $unusedTemplates = [];
+        foreach (array_keys($templates) as $id) {
+            if (!isset($reached[$id])) {
+                $usedBy = array_values(array_unique(array_map(fn(array $e) => $this->path($e['from']), $this->graph->incoming($id, Graph::TEMPLATE_EDGES))));
+                sort($usedBy);
+                $unusedTemplates[] = ['template' => $this->path($id), 'usedBy' => $usedBy];
+            }
+        }
+        usort($unusedTemplates, static fn($a, $b) => strcmp($a['template'], $b['template']));
+
+        $runtime = [];
+        foreach ($this->graph->unresolved() as $u) {
+            if ($u['pattern'] === '*' && isset($reached[Graph::templateId($u['from'])])) {
+                $runtime[] = ['template' => $u['from'], 'line' => $u['line'], 'expression' => $u['expression']];
+            }
+        }
+
+        $blocks = null;
+        if ($usage !== null) {
+            $blocks = [];
+            foreach ($this->graph->nodes('entryType') as $typeId => $_) {
+                $allowedIn = array_map(fn(array $e) => $this->handle($e['from']), $this->graph->incoming($typeId, ['allows']));
+                if ($allowedIn !== [] && ($usage[$this->handle($typeId)] ?? 0) === 0) {
+                    sort($allowedIn);
+                    $blocks[] = ['handle' => $this->handle($typeId), 'allowedIn' => $allowedIn];
+                }
+            }
+            usort($blocks, static fn($a, $b) => strcmp($a['handle'], $b['handle']));
+        }
+
+        $entryTypes = [];
+        foreach ($this->graph->nodes('entryType') as $typeId => $_) {
+            if ($this->graph->incoming($typeId, ['allows', 'hasType']) === []) {
+                $entryTypes[] = $this->handle($typeId);
+            }
+        }
+        sort($entryTypes);
+
+        $fields = [];
+        foreach ($this->graph->nodes('field') as $fieldId => $_) {
+            if ($this->graph->incoming($fieldId, ['hasField']) === []) {
+                $fields[] = $this->handle($fieldId);
+            }
+        }
+        sort($fields);
+
+        return [
+            'blocks' => $blocks,
+            'templates' => $unusedTemplates,
+            'entryTypes' => $entryTypes,
+            'fields' => $fields,
+            'runtime' => $runtime,
+        ];
+    }
+
+    /**
      * Templates a page template reaches without going into block adapters.
      *
      * @param array<string, true> $adapters

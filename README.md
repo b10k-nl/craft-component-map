@@ -83,6 +83,7 @@ and your coding agent edit templates — not for staging or production.
 |---|---|
 | `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, what it uses, and for a block the entries it is on. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
 | `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes; `--since=main` everything that changed on your branch, committed or not. `--json`. |
+| `component-map/unused` | What nothing uses: blocks no entry contains, templates nothing reaches, entry types and Matrix fields attached nowhere. `--json`. |
 | `component-map/build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
 | `component-map/agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
 
@@ -152,6 +153,42 @@ It compares with the point where your branch left `main`, so work merged into
 and counts through the templates that still reference it: they now break.
 The list of blocks and pages is what to check in the browser.
 
+### Unused
+
+```
+$ php craft component-map/unused
+
+Blocks no entry uses (7)
+  card           allowed in gridCards
+  cardsGrid      allowed in contentBlocks
+  ctaBanner      allowed in contentBlocks
+  faq            allowed in faqItems
+  faqAccordion   allowed in contentBlocks
+  quote          allowed in quotes
+  testimonials   allowed in contentBlocks
+
+Templates nothing reaches (1)
+  _component-guide-preview.twig   not referenced
+
+Entry types in no section or Matrix field (0)
+  —
+
+Matrix fields on no entry type (0)
+  —
+```
+
+A template is reached from a section's page template, from any template Craft
+serves by URL (no path segment starting with `_`), or from an entry point, and
+through everything those include, embed, extend or import. A template used only
+by other unreached templates is unreached too, so a dead chain shows up whole.
+
+Treat it as a list of candidates, not a delete list. A template rendered from
+PHP, `config/routes.php` or a plugin setting is invisible to the map — once
+you have checked one, add it to `entryPoints` (the template above is Component
+Guide's preview frame, rendered by that plugin). And if a reached template
+includes something chosen at runtime (`{% include someVariable %}`), the
+report says so: anything it lists might be used through that.
+
 ## With Component Check
 
 Component Map is useful on its own. If you also use
@@ -188,6 +225,7 @@ do, so it is safe to commit. The full instructions are in
 | `markdownFile` | `@storage/component-map/COMPONENT-MAP.md` | Where `build` writes Markdown. Empty = do not write it |
 | `jsonFile` | `@storage/component-map/graph.json` | Where `build` writes JSON. Empty = do not write it |
 | `readEntries` | `true` | List the entries that contain affected blocks. `false` = templates and schema only |
+| `entryPoints` | `[]` | Globs of templates rendered from outside Twig (PHP, routes, plugins), so `unused` does not report them, e.g. `['_emails/*']` |
 | `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
 
 ## Limitations

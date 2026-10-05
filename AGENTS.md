@@ -62,6 +62,14 @@ rebuild first.
 5. **`unmapped` files** (CSS, JS, PHP) are outside the template map. They can
    affect anything; say so rather than assuming they do not.
 
+## Before you delete
+
+Run `php craft component-map/unused --json` for candidates, and
+`show <template> --json` for the one you are about to remove: an empty
+`usedBy` is not proof on its own — templates rendered from PHP, routes or
+plugin settings are not in the map, and `runtime` lists includes chosen at
+runtime that could reach anything.
+
 ## Rules
 
 - A reference marked `dynamic` is resolved from a pattern

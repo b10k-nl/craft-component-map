@@ -146,6 +146,50 @@ class GraphTest extends TestCase
         $this->assertNull(Explorer::contentModelItem("templates/entryTypes/hero--{$uid}.yaml"));
     }
 
+    public function testUnusedTemplatesAreThoseNothingReaches(): void
+    {
+        $templates = Fixtures::templates() + [
+            '_components/old.twig' => '<i>old</i>',
+            'about.twig' => '{% extends "_layouts/site" %}',
+            '_emails/welcome.twig' => 'Hi',
+        ];
+        $templates['_components/orphan.twig'] .= '{% include "_components/old" %}';
+        $e = new Explorer((new GraphBuilder())->build($templates, Fixtures::structure()));
+
+        $report = $e->unused();
+        $this->assertSame([
+            ['template' => '_components/old.twig', 'usedBy' => ['_components/orphan.twig']],
+            ['template' => '_components/orphan.twig', 'usedBy' => []],
+            ['template' => '_emails/welcome.twig', 'usedBy' => []],
+        ], $report['templates'], 'about.twig is served by URL; the fallback adapter and macros are reached');
+        $this->assertSame([], $report['runtime'], 'the unresolved variable sits in an unreached template');
+        $this->assertNull($report['blocks'], 'not checked without entries');
+
+        $withEntryPoints = $e->unused(null, ['_emails/*', '_components/orphan.twig']);
+        $this->assertSame([], $withEntryPoints['templates'], 'entry points reach what they include, too');
+        $this->assertSame([['template' => '_components/orphan.twig', 'line' => 1, 'expression' => 'someVariable']], array_map(
+            static fn(array $r) => $r,
+            $withEntryPoints['runtime'],
+        ));
+    }
+
+    public function testUnusedContentModel(): void
+    {
+        $structure = Fixtures::structure();
+        $structure['entryTypes'][] = ['handle' => 'legacy', 'name' => 'Legacy', 'fields' => []];
+        $structure['fields'][] = ['handle' => 'spare', 'name' => 'Spare', 'entryTypes' => ['legacy']];
+        $e = new Explorer((new GraphBuilder())->build(Fixtures::templates(), $structure));
+
+        $report = $e->unused(['hero' => 3, 'card' => 1]);
+        $this->assertSame([
+            ['handle' => 'cardsGrid', 'allowedIn' => ['contentBlocks']],
+            ['handle' => 'legacy', 'allowedIn' => ['spare']],
+            ['handle' => 'quote', 'allowedIn' => ['contentBlocks']],
+        ], $report['blocks']);
+        $this->assertSame([], $report['entryTypes'], 'legacy is allowed in a field, so it is attached');
+        $this->assertSame(['spare'], $report['fields']);
+    }
+
     public function testImpactOfTheDispatcherOrLayoutIsEveryBlock(): void
     {
         $e = new Explorer($this->graph());

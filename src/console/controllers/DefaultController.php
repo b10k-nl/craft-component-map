@@ -9,6 +9,7 @@ use craft\helpers\Console;
  *
  *     component-map/show <template|handle>  Where is it used, what does it use
  *     component-map/impact <files> | --git | --since=<branch>  What a change affects
+ *     component-map/unused                What nothing uses
  *     component-map/build                 Snapshot of the whole map in storage/
  *     component-map/agents                The note for AGENTS.md / CLAUDE.md
  */
@@ -20,6 +21,7 @@ class DefaultController extends BaseController
         foreach ([
             ['show', '<template|handle>', 'Where a template, block or section is used, and what it uses'],
             ['impact', '<files> | --git | --since=main', 'What changing these files (or a branch) affects'],
+            ['unused', '', 'Blocks no entry uses, templates nothing reaches'],
             ['build', '', 'The whole map, written to storage/ (--stdout, --json)'],
             ['agents', '[--file=AGENTS.md]', 'The note that points coding agents to these commands'],
         ] as [$name, $args, $what]) {

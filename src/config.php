@@ -20,6 +20,10 @@ return [
     // `impact` and `show`. Read-only. false = templates and schema only.
     'readEntries' => true,
 
+    // Templates rendered from outside Twig (PHP, config/routes.php, a plugin
+    // setting), so `unused` does not report them. Globs relative to templates/.
+    'entryPoints' => [],
+
     // Glob patterns (relative to templates/) left out of the map.
     'ignore' => ['*.stories.twig'],
 ];
