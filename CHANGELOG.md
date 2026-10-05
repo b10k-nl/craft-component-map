@@ -3,6 +3,21 @@
 All notable changes to Component Map are documented here. This project adheres
 to [Semantic Versioning](https://semver.org).
 
+## 1.1.0 - 2026-10-05
+
+### Added
+
+- `component-map/unused` — blocks no entry contains, templates nothing
+  reaches (including whole dead chains), entry types in no section or Matrix
+  field, and Matrix fields on no entry type. Warns when a reached template
+  includes something chosen at runtime.
+- `entryPoints` setting — templates rendered from PHP, `config/routes.php` or
+  a plugin setting, so `unused` does not report them.
+
+### Changed
+
+- A shorter package description.
+
 ## 1.0.0 - 2026-09-29
 
 First release.

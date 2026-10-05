@@ -1,6 +1,6 @@
 {
     "name": "b10k/craft-component-map",
-    "description": "A map of how your Craft CMS templates fit together — pages, Matrix blocks, dispatchers, adapters, components — for developers and AI coding agents. Twig dependency graph, “where is this template used?”, and the impact of a change.",
+    "description": "See which pages and blocks a Twig template change affects — for developers and AI coding agents.",
     "type": "craft-plugin",
     "keywords": [
         "craft",
