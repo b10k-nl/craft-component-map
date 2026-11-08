@@ -2,6 +2,7 @@
     "name": "b10k/craft-component-map",
     "description": "See which pages and blocks a Twig template change affects — for developers and AI coding agents.",
     "type": "craft-plugin",
+    "homepage": "https://b10k.nl/plugins/component-map/",
     "keywords": [
         "craft",
         "cms",
