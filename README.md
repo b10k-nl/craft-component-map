@@ -29,7 +29,7 @@ the command line, as text or JSON — built from your templates as they are
 right now, on every call. It runs where you develop: nothing is generated
 into the repository, so there is no map to commit, keep up to date or merge.
 
-> Free (MIT). Craft CMS 5, for local development.
+> Free (MIT). Craft CMS 5, for local development and staging.
 
 ---
 
@@ -71,11 +71,14 @@ php craft plugin/install component-map
 php craft component-map/agents --file=AGENTS.md    # optional: tell your coding agent
 ```
 
-Read-only and console-only: it reads templates, the content model and which
-entries contain which blocks (canonical content only — no drafts or
-revisions; turn it off with `readEntries`), writes only to `storage/` (and to `AGENTS.md` when you ask it to),
-and exposes nothing over HTTP. It is meant for local development — where you
-and your coding agent edit templates — not for staging or production.
+Read-only: it reads templates, the content model and which entries contain
+which blocks (canonical content only — no drafts or revisions; turn it off
+with `readEntries`), and writes only to `storage/` (and to `AGENTS.md` when you
+ask it to). It works from the console and, on Craft 5.12+, as read-only tools
+on Craft's MCP server — both meant for where you and your coding agent edit
+templates: local development and staging. On an environment with
+`allowAdminChanges` off (production, as a rule) Component Map offers nothing
+on the MCP server.
 
 ## Commands
 
@@ -216,6 +219,40 @@ when the project runs in DDEV. The note does not change when your templates
 do, so it is safe to commit. The full instructions are in
 [AGENTS.md](AGENTS.md) in this package.
 
+### On Craft's MCP server (Craft 5.12+)
+
+Craft 5.12 ships an MCP server, so an agent connected to your site can use
+the map without a terminal. Component Map adds:
+
+| Tool | What it returns |
+|---|---|
+| `component-map.overview` | Each section's page template, the dispatchers that render page-builder blocks, the template each block type is rendered by and how many entries use it, and what the map cannot follow. A good first call. |
+| `component-map.show` | One template, block, section or Matrix field — as `show --json`. |
+| `component-map.impact` | What changing these files affects, with the entries to check — as `impact --json`. `files`, or `git: true`, or `since: "main"` (the last two need a git checkout where Craft runs). |
+| `component-map.unused` | As `unused --json`. |
+
+All read only (`readOnlyHint`, so the `mcp:read` scope is enough), for users
+with control-panel access. Entries a user may not view are counted, not
+listed. The map is built afresh on every call, so a long-running stdio server
+never answers from yesterday's templates.
+
+It also adds two checks to `content-model.audit` — only the certain cases:
+
+- `component-map-broken-references` — a template that includes, embeds or
+  extends one that does not exist (`ignore missing`, and a fallback list with
+  an entry that exists, are fine);
+- `component-map-blocks-without-template` — a block type a dispatched Matrix
+  field allows that has no template named after it, so it falls back or
+  renders nothing.
+
+And a few lines to `info.get`: this project's dispatchers and which tool to
+use when, so an agent knows the convention before it opens a template.
+
+Only where `allowAdminChanges` is on, and the `mcp` setting can switch it all
+off. If a later Craft changes what the MCP attributes accept, Component Map
+leaves its tools out and logs a warning — the rest of the site's MCP server
+keeps answering.
+
 ## Configuration
 
 `config/component-map.php`:
@@ -226,6 +263,7 @@ do, so it is safe to commit. The full instructions are in
 | `jsonFile` | `@storage/component-map/graph.json` | Where `build` writes JSON. Empty = do not write it |
 | `readEntries` | `true` | List the entries that contain affected blocks. `false` = templates and schema only |
 | `entryPoints` | `[]` | Globs of templates rendered from outside Twig (PHP, routes, plugins), so `unused` does not report them, e.g. `['_emails/*']` |
+| `mcp` | `true` | Tools, audit checks and instructions on Craft's MCP server (Craft 5.12+) — only where `allowAdminChanges` is on. `false` = none |
 | `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
 
 ## Limitations

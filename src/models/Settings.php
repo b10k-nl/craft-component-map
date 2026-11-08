@@ -30,6 +30,13 @@ class Settings extends Model
     public bool $readEntries = true;
 
     /**
+     * @var bool Offer the `component-map.*` tools, the content-model checks
+     * and the `info.get` instructions on Craft's MCP server (Craft 5.12+).
+     * Only where allowAdminChanges is on, whatever this says.
+     */
+    public bool $mcp = true;
+
+    /**
      * @var string[] Glob patterns (relative to the templates folder) of
      * templates rendered from outside Twig — PHP, `config/routes.php`, a
      * plugin setting — so `unused` does not report them. E.g. `_emails/*`.

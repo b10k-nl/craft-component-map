@@ -57,46 +57,10 @@ abstract class BaseController extends Controller
         return $code;
     }
 
-    /**
-     * Entries to check, most reasons first, with title, URL and status.
-     * Null when reading entries is off or fails (with a warning).
-     *
-     * @param array<int, string[]> $reasons element id => reasons
-     * @return array{total: int, entries: array<int, array<string, mixed>>}|null
-     */
-    protected function describeEntries(array $reasons, int $limit): ?array
+    protected function warnEntries(?string $error): void
     {
-        uksort($reasons, static fn(int $a, int $b) => [count($reasons[$b]), $a] <=> [count($reasons[$a]), $b]);
-        $ids = $limit > 0 ? array_slice(array_keys($reasons), 0, $limit) : array_keys($reasons);
-        try {
-            $entries = $this->plugin()->getCraftContent()->describe($ids);
-        } catch (\Throwable $e) {
-            $this->warnEntries($e);
-            return null;
-        }
-        foreach ($entries as &$entry) {
-            $entry['reasons'] = $reasons[$entry['id']] ?? [];
-        }
-        return ['total' => count($reasons), 'entries' => $entries];
-    }
-
-    protected function content(): ?\b10k\componentmap\services\ContentIndex
-    {
-        if (!$this->plugin()->getSettings()->readEntries) {
-            return null;
-        }
-        try {
-            return $this->plugin()->getCraftContent()->index();
-        } catch (\Throwable $e) {
-            $this->warnEntries($e);
-            return null;
-        }
-    }
-
-    private function warnEntries(\Throwable $e): void
-    {
-        if (!$this->json) {
-            $this->stderr('Could not read entries: ' . $e->getMessage() . "\n", Console::FG_YELLOW);
+        if ($error !== null && !$this->json) {
+            $this->stderr('Could not read entries: ' . $error . "\n", Console::FG_YELLOW);
         }
     }
 

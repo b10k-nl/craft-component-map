@@ -25,6 +25,15 @@ class MapService extends Component
 
     private ?Graph $graph = null;
 
+    /**
+     * Forgets the map, so the next call reads the templates again — for a
+     * long-running process (Craft's MCP server over stdio).
+     */
+    public function reset(): void
+    {
+        $this->graph = null;
+    }
+
     public function graph(): Graph
     {
         if ($this->graph !== null) {

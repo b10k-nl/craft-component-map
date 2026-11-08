@@ -419,6 +419,158 @@ final class Explorer
     }
 
     /**
+     * References to a template that does not exist — a real error, not a
+     * guess: the reference names a fixed path, the reference does not allow
+     * the template to be missing (`ignore missing`), and it is not one of a
+     * fallback list whose other entry exists.
+     *
+     * @return list<array{template: string, line: int, tag: string, reference: string}>
+     */
+    public function brokenReferences(): array
+    {
+        $out = [];
+        foreach ($this->graph->unresolved() as $u) {
+            if ($u['reason'] !== 'template not found' || $u['covered']) {
+                continue;
+            }
+            $out[] = ['template' => $u['from'], 'line' => $u['line'], 'tag' => $u['tag'], 'reference' => $u['pattern']];
+        }
+        usort($out, static fn($a, $b) => [$a['template'], $a['line']] <=> [$b['template'], $b['line']]);
+        return $out;
+    }
+
+    /**
+     * Block types a dispatcher should render and cannot: a Matrix field whose
+     * other block types each have a template named after them (so this field
+     * is dispatched), and this one has none — it falls through to the
+     * dispatcher's fallback, or to nothing.
+     *
+     * A field none of whose block types has a template of its own is left
+     * alone: its blocks are rendered by their parent's template (a card inside
+     * a cards grid), which is not a mistake.
+     *
+     * @return list<array{entryType: string, field: string, dispatchers: list<string>}>
+     */
+    public function blocksWithoutTemplate(): array
+    {
+        $out = [];
+        foreach ($this->graph->nodes('field') as $fieldId => $_) {
+            $allowed = array_column($this->graph->outgoing($fieldId, ['allows']), 'to');
+            $dispatchers = [];
+            $missing = [];
+            foreach ($allowed as $typeId) {
+                $renders = $this->graph->outgoing($typeId, ['renders']);
+                if ($renders === []) {
+                    $missing[] = $typeId;
+                }
+                foreach ($renders as $e) {
+                    if (isset($e['via'])) {
+                        $dispatchers[$this->path(Graph::templateId($e['via']))] = true;
+                    }
+                }
+            }
+            if ($dispatchers === [] || $missing === []) {
+                continue;
+            }
+            $vias = array_keys($dispatchers);
+            sort($vias);
+            foreach ($missing as $typeId) {
+                $out[] = ['entryType' => $this->handle($typeId), 'field' => $this->handle($fieldId), 'dispatchers' => $vias];
+            }
+        }
+        usort($out, static fn($a, $b) => [$a['field'], $a['entryType']] <=> [$b['field'], $b['entryType']]);
+        return $out;
+    }
+
+    /**
+     * The map at a glance, for an agent's first look: pages and their
+     * templates, the dispatchers that render blocks, each block's template,
+     * and where the map is blind. Bounded: lists, not the whole graph.
+     *
+     * @param array<string, int>|null $usage block type handle => entries it is on
+     * @return array<string, mixed>
+     */
+    public function overview(?array $usage = null, int $limit = 50): array
+    {
+        $pages = [];
+        foreach (['section', 'categoryGroup'] as $kind) {
+            foreach ($this->graph->nodes($kind) as $id => $node) {
+                $pages[] = [
+                    'kind' => $kind,
+                    'handle' => $this->handle($id),
+                    'name' => $node['label'],
+                    'templates' => array_map(fn(array $e) => $this->path($e['to']), $this->graph->outgoing($id, ['page'])),
+                ];
+            }
+        }
+
+        $dispatchers = [];
+        $blocks = [];
+        foreach ($this->graph->nodes('entryType') as $typeId => $node) {
+            $allowedIn = array_map(fn(array $e) => $this->handle($e['from']), $this->graph->incoming($typeId, ['allows']));
+            if ($allowedIn === []) {
+                continue; // a page's own entry type, not a block
+            }
+            sort($allowedIn);
+            $renderedBy = [];
+            foreach ($this->graph->outgoing($typeId, ['renders']) as $e) {
+                $via = isset($e['via']) ? (string)$e['via'] : null;
+                $renderedBy[] = ['template' => $this->path($e['to']), 'via' => $via];
+                if ($via !== null) {
+                    $dispatchers[$via][$this->handle($typeId)] = true;
+                }
+            }
+            $blocks[] = [
+                'entryType' => $this->handle($typeId),
+                'name' => $node['label'],
+                'allowedIn' => $allowedIn,
+                'renderedBy' => $renderedBy,
+                'entries' => $usage === null ? null : ($usage[$this->handle($typeId)] ?? 0),
+            ];
+        }
+
+        $dispatcherRows = [];
+        foreach ($dispatchers as $via => $handles) {
+            $patterns = [];
+            foreach ($this->graph->outgoing(Graph::templateId($via), Graph::TEMPLATE_EDGES) as $e) {
+                if (!empty($e['dynamic']) && isset($e['pattern'])) {
+                    $patterns[(string)$e['pattern']] = true;
+                }
+            }
+            $h = array_keys($handles);
+            sort($h);
+            $p = array_keys($patterns);
+            sort($p);
+            $dispatcherRows[] = ['template' => $via, 'patterns' => $p, 'renders' => $h];
+        }
+
+        $unresolved = array_values(array_filter($this->graph->unresolved(), static fn(array $u) => !$u['covered']));
+
+        return [
+            'counts' => [
+                'templates' => count($this->graph->nodes('template')),
+                'sections' => count($this->graph->nodes('section')),
+                'matrixFields' => count($this->graph->nodes('field')),
+                'entryTypes' => count($this->graph->nodes('entryType')),
+            ],
+            'pages' => array_slice($pages, 0, $limit),
+            'dispatchers' => $dispatcherRows,
+            'blocks' => array_slice($blocks, 0, $limit),
+            'notResolved' => [
+                'total' => count($unresolved),
+                'items' => array_map(static fn(array $u) => [
+                    'template' => $u['from'],
+                    'line' => $u['line'],
+                    'expression' => $u['expression'],
+                    'reason' => $u['reason'],
+                ], array_slice($unresolved, 0, 20)),
+            ],
+            'errors' => $this->graph->errors(),
+            'truncated' => count($pages) > $limit || count($blocks) > $limit,
+        ];
+    }
+
+    /**
      * Templates a page template reaches without going into block adapters.
      *
      * @param array<string, true> $adapters

@@ -19,11 +19,9 @@ class UnusedController extends BaseController
 {
     public function actionIndex(): int
     {
-        $plugin = $this->plugin();
-        $index = $this->content();
-        $usage = $index?->usage();
-
-        $report = $plugin->getMap()->explorer()->unused($usage, $plugin->getSettings()->entryPoints);
+        $reports = $this->plugin()->getReports();
+        $report = $reports->unused();
+        $this->warnEntries($reports->entriesError);
 
         if ($this->json) {
             $this->writeJson(['status' => 'ok'] + $report);

@@ -3,6 +3,25 @@
 All notable changes to Component Map are documented here. This project adheres
 to [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- Craft's MCP server (Craft 5.12+): read-only tools `component-map.overview`,
+  `component-map.show`, `component-map.impact` and `component-map.unused`,
+  two checks in `content-model.audit` (`component-map-broken-references`,
+  `component-map-blocks-without-template`), and this project's dispatchers in
+  `info.get`. Only where `allowAdminChanges` is on; the new `mcp` setting
+  turns it off. Nothing changes on Craft 5.11 and earlier.
+- `ignore missing` / `ignore_missing = true`, and a fallback list with an entry
+  that exists, mark a missing template as intended.
+
+### Changed
+
+- The console commands and the MCP tools share one report, so `--json` and an
+  agent see the same shape.
+- CI also runs weekly and on demand, against the newest Craft and MCP SDK.
+
 ## 1.1.0 - 2026-10-05
 
 ### Added

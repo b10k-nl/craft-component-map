@@ -4,6 +4,15 @@ This file is for a coding agent working in a Craft CMS project that has the
 Component Map plugin installed. Use it before you change, move, rename or
 delete a Twig template.
 
+## Through Craft's MCP server
+
+If you are connected to the site's MCP server (Craft 5.12+), use the tools
+instead of the commands below — same answers, same JSON:
+`component-map.overview` (a first look), `component-map.show`,
+`component-map.impact` (pass `files`, or `git: true`, or `since: "main"`) and
+`component-map.unused`. `info.get` tells you this project's dispatchers. The
+tools exist only where `allowAdminChanges` is on.
+
 ## Before you edit
 
 Use `ddev craft` instead of `php craft` if the project runs in DDEV. Every

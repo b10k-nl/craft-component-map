@@ -2,6 +2,7 @@
 
 namespace b10k\componentmap\console\controllers;
 
+use b10k\componentmap\services\ReportException;
 use Craft;
 use craft\helpers\Console;
 
@@ -40,53 +41,29 @@ class ImpactController extends BaseController
      */
     public function actionIndex(string $files = ''): int
     {
-        $map = $this->plugin()->getMap();
         $since = trim($this->since);
-
-        $paths = array_values(array_filter(array_map('trim', explode(',', $files)), static fn($p) => $p !== ''));
-        $deleted = [];
-        $base = null;
-        if ($this->git || $since !== '') {
-            try {
-                $changes = $map->gitChanges($since !== '' ? $since : null);
-            } catch (\RuntimeException $e) {
-                return $this->error($e->getMessage());
-            }
-            if ($changes === null) {
-                return $this->error('Not a git checkout (or git is not available here).');
-            }
-            $paths = [...$paths, ...$changes['changed']];
-            $deleted = $changes['deleted'];
-            $base = $changes['base'];
+        $reports = $this->plugin()->getReports();
+        try {
+            $report = $reports->impact(explode(',', $files), $this->git, $since, $this->json ? 0 : $this->limit);
+        } catch (ReportException $e) {
+            return $this->error($e->getMessage());
         }
-        if ($paths === [] && $deleted === []) {
-            if ($this->git || $since !== '') {
-                return $this->nothingChanged($since, $base);
-            }
-            return $this->error('Name the files, or use --git or --since=<branch>.');
-        }
-
-        $changed = $map->classify($paths);
-        $gone = $map->classify($deleted);
-        $impact = $map->explorer()->impact(
-            $changed['templates'],
-            $gone['templates'],
-            [...$changed['contentModel'], ...$gone['contentModel']],
-        );
-        $impact['ignored'] = array_values(array_unique([...$changed['ignored'], ...$gone['ignored']]));
-        $impact['unmapped'] = array_values(array_unique([...$impact['unmapped'], ...$changed['other'], ...$gone['other']]));
-
-        $entries = null;
-        $index = $this->content();
-        if ($index !== null) {
-            $wholeSections = array_map([self::class, 'short'], array_filter($impact['wholePages'], static fn($p) => str_starts_with($p, 'section:')));
-            $entries = $this->describeEntries($index->toCheck($impact['entryTypes'], $wholeSections), $this->json ? 0 : $this->limit);
-        }
+        $this->warnEntries($reports->entriesError);
 
         if ($this->json) {
-            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => $paths, 'deletedFiles' => $deleted] + $impact + ['entriesToCheck' => $entries]);
+            $this->writeJson($report);
             return self::EXIT_OK;
         }
+
+        if ($report['files'] === [] && $report['deletedFiles'] === []) {
+            $this->stdout(($since !== '' ? "Nothing changed since {$since}." : 'No uncommitted changes.') . "\n");
+            return self::EXIT_OK;
+        }
+
+        $base = $report['base'];
+        $impact = $report;
+        $entries = $report['entriesToCheck'];
+        $map = $this->plugin()->getMap();
 
         if ($since !== '') {
             $this->stdout("Changes since {$since}" . ($base ? ' (from ' . substr($base, 0, 7) . ')' : '') . ", committed or not\n\n", Console::FG_GREY);
@@ -126,16 +103,6 @@ class ImpactController extends BaseController
             $this->stdout('Test them: ' . $map->craftCommand() . ' component-check/test ' . implode(',', $impact['entryTypes']) . "\n", Console::FG_GREY);
         }
 
-        return self::EXIT_OK;
-    }
-
-    private function nothingChanged(string $since, ?string $base): int
-    {
-        if ($this->json) {
-            $this->writeJson(['status' => 'ok', 'since' => $since !== '' ? $since : null, 'base' => $base, 'files' => [], 'deletedFiles' => [], 'templates' => [], 'entryTypes' => [], 'pages' => [], 'contentModel' => [], 'deleted' => [], 'ignored' => [], 'unmapped' => []]);
-        } else {
-            $this->stdout(($since !== '' ? "Nothing changed since {$since}." : 'No uncommitted changes.') . "\n");
-        }
         return self::EXIT_OK;
     }
 }

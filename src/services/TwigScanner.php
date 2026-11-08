@@ -76,7 +76,7 @@ final class TwigScanner
                     $expr = $this->collectTagExpression($tokens, $i + 2, self::TAGS[$tag]);
                     $targets = $this->analyse($expr);
                     if ($targets !== []) {
-                        $references[] = new Reference($tag, $tokens[$i + 1]->getLine(), $targets);
+                        $references[] = new Reference($tag, $tokens[$i + 1]->getLine(), $targets, $this->tagIgnoresMissing($tokens, $i + 2));
                     }
                 }
                 continue;
@@ -95,12 +95,55 @@ final class TwigScanner
                 $expr = $this->collectFirstArgument($tokens, $i + 2);
                 $targets = $this->analyse($expr);
                 if ($targets !== []) {
-                    $references[] = new Reference($token->getValue() . '()', $token->getLine(), $targets);
+                    $references[] = new Reference($token->getValue() . '()', $token->getLine(), $targets, $this->callIgnoresMissing($tokens, $i + 2));
                 }
             }
         }
 
         return ['references' => $references, 'error' => null];
+    }
+
+    /**
+     * `{% include … ignore missing %}`: anywhere before the closing `%}`.
+     *
+     * @param Token[] $tokens
+     */
+    private function tagIgnoresMissing(array $tokens, int $start): bool
+    {
+        for ($i = $start, $n = count($tokens); $i < $n - 1; $i++) {
+            if ($tokens[$i]->test(Token::BLOCK_END_TYPE)) {
+                return false;
+            }
+            if ($tokens[$i]->test(Token::NAME_TYPE, 'ignore') && $tokens[$i + 1]->test(Token::NAME_TYPE, 'missing')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * `include('…', {}, ignore_missing = true)` (or `:`), within the call's
+     * parentheses.
+     *
+     * @param Token[] $tokens
+     */
+    private function callIgnoresMissing(array $tokens, int $start): bool
+    {
+        $depth = 0;
+        for ($i = $start, $n = count($tokens); $i < $n - 2; $i++) {
+            $t = $tokens[$i];
+            if ($depth === 0 && self::sym($t, ')')) {
+                return false;
+            }
+            if ($t->test(Token::BLOCK_END_TYPE) || $t->test(Token::VAR_END_TYPE)) {
+                return false;
+            }
+            if ($depth === 0 && $t->test(Token::NAME_TYPE, 'ignore_missing') && self::sym($tokens[$i + 1], ['=', ':']) && $tokens[$i + 2]->test(Token::NAME_TYPE, 'true')) {
+                return true;
+            }
+            $depth += $this->depthChange($t);
+        }
+        return false;
     }
 
     /**

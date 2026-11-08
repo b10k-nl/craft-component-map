@@ -21,6 +21,16 @@ class CraftContent extends Component
 {
     private ?ContentIndex $index = null;
 
+    /**
+     * Forgets what was read, so the next call reads entries again — for a
+     * long-running process (Craft's MCP server over stdio) where content
+     * changes between calls.
+     */
+    public function reset(): void
+    {
+        $this->index = null;
+    }
+
     public function index(): ContentIndex
     {
         if ($this->index !== null) {
@@ -82,9 +92,10 @@ class CraftContent extends Component
      * are looked up in the primary site first, then any site they exist in.
      *
      * @param int[] $ids
+     * @param (callable(ElementInterface): bool)|null $visible Leave out elements this returns false for.
      * @return array<int, array{id: int, title: string, url: ?string, cpUrl: ?string, status: string, where: string}>
      */
-    public function describe(array $ids): array
+    public function describe(array $ids, ?callable $visible = null): array
     {
         if ($ids === []) {
             return [];
@@ -104,6 +115,9 @@ class CraftContent extends Component
             /** @var class-string<ElementInterface> $class */
             $query = $class::find()->id($classIds)->status(null)->site('*')->unique()->preferSites([$primary]);
             foreach ($query->all() as $element) {
+                if ($visible !== null && !$visible($element)) {
+                    continue;
+                }
                 $found[(int)$element->id] = [
                     'id' => (int)$element->id,
                     'title' => self::label($element),

@@ -100,6 +100,16 @@ final class GraphBuilder
         }
 
         foreach ($result['references'] as $reference) {
+            // A missing template is fine when the reference says so (`ignore
+            // missing`) or when it is one of a fallback list and another
+            // entry of that list exists.
+            $hasFallback = false;
+            $anyResolved = false;
+            $missing = [];
+            foreach ($reference->targets as $target) {
+                $hasFallback = $hasFallback || $target['fallback'];
+            }
+
             foreach ($reference->targets as $target) {
                 $pattern = $target['pattern'];
 
@@ -109,16 +119,10 @@ final class GraphBuilder
 
                 $files = $resolver->resolve($pattern);
                 if ($files === []) {
-                    $graph->addUnresolved(
-                        $path,
-                        $reference->tag,
-                        $reference->line,
-                        $pattern,
-                        $target['expression'],
-                        $target['dynamic'] ? ($pattern === '*' ? 'expression cannot be resolved statically' : 'no file matches the pattern') : 'template not found',
-                    );
+                    $missing[] = $target;
                     continue;
                 }
+                $anyResolved = true;
 
                 foreach ($files as $file) {
                     if ($file === $path) {
@@ -141,6 +145,20 @@ final class GraphBuilder
                         }
                     }
                 }
+            }
+
+            $covered = $reference->optional || ($hasFallback && $anyResolved);
+            foreach ($missing as $target) {
+                $pattern = $target['pattern'];
+                $graph->addUnresolved(
+                    $path,
+                    $reference->tag,
+                    $reference->line,
+                    $pattern,
+                    $target['expression'],
+                    $target['dynamic'] ? ($pattern === '*' ? 'expression cannot be resolved statically' : 'no file matches the pattern') : 'template not found',
+                    $covered,
+                );
             }
         }
     }

@@ -27,7 +27,7 @@ final class Graph
     /** @var array<string, array{from: string, to: string, kind: string, line?: int, dynamic?: bool, fallback?: bool, conditional?: bool, pattern?: string, via?: string}> */
     private array $edges = [];
 
-    /** @var array<int, array{from: string, tag: string, line: int, pattern: string, expression: string, reason: string}> */
+    /** @var array<int, array{from: string, tag: string, line: int, pattern: string, expression: string, reason: string, covered: bool}> */
     private array $unresolved = [];
 
     /** @var array<string, string> template path → error */
@@ -73,9 +73,13 @@ final class Graph
         $this->in[$to][$key] = true;
     }
 
-    public function addUnresolved(string $from, string $tag, int $line, string $pattern, string $expression, string $reason): void
+    /**
+     * @param bool $covered The reference allows the template to be missing
+     *                      (`ignore missing`, or a fallback list with an entry that exists).
+     */
+    public function addUnresolved(string $from, string $tag, int $line, string $pattern, string $expression, string $reason, bool $covered = false): void
     {
-        $this->unresolved[] = compact('from', 'tag', 'line', 'pattern', 'expression', 'reason');
+        $this->unresolved[] = compact('from', 'tag', 'line', 'pattern', 'expression', 'reason', 'covered');
     }
 
     public function addError(string $template, string $message): void
@@ -148,7 +152,7 @@ final class Graph
     public const TEMPLATE_EDGES = ['include', 'embed', 'extends', 'import', 'from', 'use', 'include()', 'source()'];
 
     /**
-     * @return array<int, array{from: string, tag: string, line: int, pattern: string, expression: string, reason: string}>
+     * @return array<int, array{from: string, tag: string, line: int, pattern: string, expression: string, reason: string, covered: bool}>
      */
     public function unresolved(): array
     {

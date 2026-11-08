@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Without a composer.lock every run gets the newest Craft and MCP SDK, so a
+  # weekly run catches a change to the MCP attributes or the content-model
+  # check interface before a user does.
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
 
 jobs:
   check:

@@ -23,28 +23,12 @@ class ShowController extends BaseController
      */
     public function actionIndex(string $query): int
     {
-        $explorer = $this->plugin()->getMap()->explorer();
-        $id = $explorer->find($query);
-
-        if ($id === null) {
+        $reports = $this->plugin()->getReports();
+        $d = $reports->show($query, $this->json ? 0 : $this->limit);
+        if ($d === null) {
             return $this->error("Nothing called “{$query}” in the map (templates, entry types, sections, fields).", self::EXIT_NOT_FOUND);
         }
-
-        $d = $explorer->describe($id);
-
-        $d['entries'] = null;
-        $index = $this->content();
-        if ($index !== null) {
-            $handle = self::short($id);
-            $ids = match ($d['node']['kind']) {
-                'entryType' => $d['allowedIn'] !== [] ? $index->containing($handle) : $index->ofType($handle),
-                'section' => $index->inSection($handle),
-                default => null,
-            };
-            if ($ids !== null) {
-                $d['entries'] = $this->describeEntries(array_fill_keys($ids, []), $this->json ? 0 : $this->limit);
-            }
-        }
+        $this->warnEntries($reports->entriesError);
 
         if ($this->json) {
             $this->writeJson($d);

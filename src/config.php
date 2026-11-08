@@ -20,6 +20,10 @@ return [
     // `impact` and `show`. Read-only. false = templates and schema only.
     'readEntries' => true,
 
+    // Tools, audit checks and instructions on Craft's MCP server (Craft 5.12+),
+    // only where allowAdminChanges is on. false = none at all.
+    'mcp' => true,
+
     // Templates rendered from outside Twig (PHP, config/routes.php, a plugin
     // setting), so `unused` does not report them. Globs relative to templates/.
     'entryPoints' => [],

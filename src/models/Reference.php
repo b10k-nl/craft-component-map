@@ -19,11 +19,13 @@ final class Reference
     /**
      * @param string $tag include | embed | extends | import | from | use | include() | source()
      * @param array<int, array{pattern: string, dynamic: bool, fallback: bool, conditional: bool, expression: string}> $targets
+     * @param bool $optional `ignore missing` / `ignore_missing = true`: a missing template is allowed.
      */
     public function __construct(
         public readonly string $tag,
         public readonly int $line,
         public readonly array $targets,
+        public readonly bool $optional = false,
     ) {
     }
 }
