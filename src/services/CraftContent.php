@@ -4,10 +4,10 @@ namespace b10k\componentmap\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\ElementInterface;
+use CraftCms\Cms\Element\Contracts\ElementInterface;
 use craft\db\Query;
 use craft\db\Table;
-use craft\elements\Entry;
+use CraftCms\Cms\Entry\Elements\Entry;
 
 /**
  * Reads which entries contain which blocks, straight from Craft's ownership

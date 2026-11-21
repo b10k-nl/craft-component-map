@@ -5,7 +5,7 @@ namespace b10k\componentmap\services;
 use b10k\componentmap\Plugin;
 use Craft;
 use craft\base\Component;
-use craft\base\ElementInterface;
+use CraftCms\Cms\Element\Contracts\ElementInterface;
 
 /**
  * The reports the console commands print and the MCP tools return — one

@@ -4,7 +4,7 @@ namespace b10k\componentmap\services;
 
 use Craft;
 use craft\base\Component;
-use craft\fields\Matrix;
+use CraftCms\Cms\Field\Matrix;
 use craft\models\EntryType;
 
 /**
