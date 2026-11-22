@@ -22,9 +22,9 @@ final class AgentsNote
     public const END = '<!-- /component-map -->';
 
     /**
-     * @param string $craft How to run Craft in this project: `php craft`, `ddev craft`.
+     * @param string $craft How to run Artisan in this project: `php artisan`, `ddev artisan`.
      */
-    public static function text(string $craft = 'php craft'): string
+    public static function text(string $craft = 'php artisan'): string
     {
         return implode("\n", [
             self::START,
@@ -35,11 +35,11 @@ final class AgentsNote
             'check what your changes affect:',
             '',
             '```bash',
-            "{$craft} component-map/show <template|entry type|section> --json",
-            "{$craft} component-map/impact --git --json",
+            "{$craft} craft:component-map:show <template|entry type|section> --json",
+            "{$craft} craft:component-map:impact --git --json",
             '```',
             '',
-            "The whole map as Markdown: `{$craft} component-map/build --stdout`. It is built from the current",
+            "The whole map as Markdown: `{$craft} craft:component-map:build --stdout`. It is built from the current",
             'templates on every call — do not commit it. Details: `vendor/b10k/craft-component-map/AGENTS.md`.',
             self::END,
         ]);
@@ -48,7 +48,7 @@ final class AgentsNote
     /**
      * The file's content with the note added, or the earlier note replaced.
      */
-    public static function addTo(string $content, string $craft = 'php craft'): string
+    public static function addTo(string $content, string $craft = 'php artisan'): string
     {
         $note = self::text($craft);
         $start = strpos($content, self::START);

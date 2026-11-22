@@ -8,8 +8,8 @@ use craft\helpers\Console;
  * What nothing uses: blocks no entry contains, templates nothing reaches,
  * entry types and Matrix fields that are not attached anywhere.
  *
- *     php craft component-map/unused
- *     php craft component-map/unused --json
+ *     php artisan craft:component-map:unused
+ *     php artisan craft:component-map:unused --json
  *
  * Read it as a list of candidates, not a delete list: a template rendered from
  * PHP, `config/routes.php` or a plugin setting is invisible to the map — add it
@@ -17,6 +17,9 @@ use craft\helpers\Console;
  */
 class UnusedController extends BaseController
 {
+    /**
+     * Lists what nothing uses: blocks, templates, entry types and Matrix fields.
+     */
     public function actionIndex(): int
     {
         $reports = $this->plugin()->getReports();

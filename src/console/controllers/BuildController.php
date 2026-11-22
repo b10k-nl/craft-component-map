@@ -14,9 +14,9 @@ use craft\helpers\Json;
  * and `impact` build the map from the current templates on every call and
  * never read these files.
  *
- *     php craft component-map/build
- *     php craft component-map/build --json      # the whole graph to stdout, writes nothing
- *     php craft component-map/build --stdout    # the Markdown to stdout, writes nothing
+ *     php artisan craft:component-map:build
+ *     php artisan craft:component-map:build --json      # the whole graph to stdout, writes nothing
+ *     php artisan craft:component-map:build --stdout    # the Markdown to stdout, writes nothing
  */
 class BuildController extends BaseController
 {
@@ -30,6 +30,9 @@ class BuildController extends BaseController
         return array_merge(parent::options($actionID), ['stdout']);
     }
 
+    /**
+     * Writes a snapshot of the whole map to storage/, as Markdown and JSON.
+     */
     public function actionIndex(): int
     {
         $plugin = $this->plugin();

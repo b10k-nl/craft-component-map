@@ -7,9 +7,9 @@ use craft\helpers\Console;
 /**
  * Everything the map knows about one template, entry type, section or field.
  *
- *     php craft component-map/show _blocks/hero
- *     php craft component-map/show hero              # the entry type
- *     php craft component-map/show home --json       # the section
+ *     php artisan craft:component-map:show _blocks/hero
+ *     php artisan craft:component-map:show hero              # the entry type
+ *     php artisan craft:component-map:show home --json       # the section
  */
 class ShowController extends BaseController
 {
@@ -19,6 +19,8 @@ class ShowController extends BaseController
     }
 
     /**
+     * Shows everything the map knows about a template, entry type, section or field.
+     *
      * @param string $query A template path, or an entry type / section / field handle.
      */
     public function actionIndex(string $query): int

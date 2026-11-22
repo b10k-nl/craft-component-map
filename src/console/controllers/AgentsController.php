@@ -12,9 +12,9 @@ use craft\helpers\FileHelper;
  * or `CLAUDE.md` in the project root. This is the one thing worth committing:
  * it does not change when the templates do.
  *
- *     php craft component-map/agents                    # print it
- *     php craft component-map/agents --file=AGENTS.md   # add it to the file (or update it)
- *     php craft component-map/agents --file=CLAUDE.md
+ *     php artisan craft:component-map:agents                    # print it
+ *     php artisan craft:component-map:agents --file=AGENTS.md   # add it to the file (or update it)
+ *     php artisan craft:component-map:agents --file=CLAUDE.md
  */
 class AgentsController extends BaseController
 {
@@ -28,6 +28,9 @@ class AgentsController extends BaseController
         return array_merge(parent::options($actionID), ['file']);
     }
 
+    /**
+     * Prints or adds the note that tells a coding agent to use Component Map.
+     */
     public function actionIndex(): int
     {
         $craft = $this->plugin()->getMap()->craftCommand();

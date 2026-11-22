@@ -10,11 +10,11 @@ use craft\helpers\Console;
  * What changing these files affects: templates above them, page-builder
  * blocks rendered through them, pages that reach them.
  *
- *     php craft component-map/impact templates/_components/card.twig
- *     php craft component-map/impact _components/card,_blocks/hero
- *     php craft component-map/impact --git            # uncommitted changes
- *     php craft component-map/impact --since=main     # the whole branch, committed or not
- *     php craft component-map/impact --since=main --json
+ *     php artisan craft:component-map:impact templates/_components/card.twig
+ *     php artisan craft:component-map:impact _components/card,_blocks/hero
+ *     php artisan craft:component-map:impact --git            # uncommitted changes
+ *     php artisan craft:component-map:impact --since=main     # the whole branch, committed or not
+ *     php artisan craft:component-map:impact --since=main --json
  *
  * A deleted template counts through the templates that still reference it.
  */
@@ -37,6 +37,8 @@ class ImpactController extends BaseController
     }
 
     /**
+     * Shows what changing these files affects: templates, blocks and pages.
+     *
      * @param string $files Comma-separated paths (project- or templates-relative).
      */
     public function actionIndex(string $files = ''): int
@@ -100,7 +102,7 @@ class ImpactController extends BaseController
         }
 
         if ($impact['entryTypes'] !== [] && Craft::$app->getPlugins()->isPluginEnabled('component-check')) {
-            $this->stdout('Test them: ' . $map->craftCommand() . ' component-check/test ' . implode(',', $impact['entryTypes']) . "\n", Console::FG_GREY);
+            $this->stdout('Test them: ' . $map->craftCommand() . ' craft:component-check:test ' . implode(',', $impact['entryTypes']) . "\n", Console::FG_GREY);
         }
 
         return self::EXIT_OK;

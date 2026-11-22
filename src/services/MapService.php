@@ -2,6 +2,7 @@
 
 namespace b10k\componentmap\services;
 
+use b10k\componentmap\helpers\Cli;
 use b10k\componentmap\models\Graph;
 use b10k\componentmap\Plugin;
 use Craft;
@@ -53,13 +54,13 @@ class MapService extends Component
     }
 
     /**
-     * How to run Craft in this project, for the commands the plugin prints:
-     * `ddev craft` when it runs in DDEV, otherwise `php craft`.
+     * How to run Artisan in this project, for the commands the plugin prints:
+     * `ddev artisan` on DDEV, otherwise `php artisan` (Craft 6 decides, see
+     * Cli). Craft commands follow as `craft:<handle>:<action>`.
      */
     public function craftCommand(): string
     {
-        $root = (string)Craft::getAlias('@root');
-        return getenv('IS_DDEV_PROJECT') === 'true' || is_file($root . '/.ddev/config.yaml') ? 'ddev craft' : 'php craft';
+        return Cli::artisan();
     }
 
     /**
