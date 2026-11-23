@@ -3,11 +3,11 @@
 namespace b10k\componentmap\mcp;
 
 use b10k\componentmap\Plugin;
-use craft\mcp\contentmodel\Check;
+use CraftCms\Cms\Mcp\ContentModel\Check;
 
 /**
  * A template that includes, embeds or extends one that does not exist — as a
- * check of Craft's `content-model.audit` (Craft 5.12+). Only certain cases:
+ * check of Craft's `content_model_audit` (Craft 6). Only certain cases:
  * `ignore missing`, and a fallback list with an entry that exists, are fine.
  *
  * Only loaded when Craft has MCP: Plugin registers it behind a class_exists().

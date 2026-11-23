@@ -151,7 +151,7 @@ class CraftContent extends Component
         }
         if ($element instanceof Entry) {
             $section = $element->getSection();
-            if ($section !== null && $section->type === \craft\models\Section::TYPE_SINGLE) {
+            if ($section !== null && $section->type === \CraftCms\Cms\Section\Enums\SectionType::Single) {
                 return (string)$section->name;
             }
         }

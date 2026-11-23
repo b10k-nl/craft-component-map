@@ -24,7 +24,7 @@ use yii\base\Event;
  * Read-only: it reads templates and the content model's schema, and — to
  * list the pages to check — which entries contain which blocks. It writes
  * only to storage/ (and to AGENTS.md when asked, by `component-map/agents`).
- * Console commands, plus read-only tools on Craft's MCP server (Craft 5.12+)
+ * Console commands, plus read-only tools on Craft's MCP server (Craft 6)
  * where allowAdminChanges is on — the same place it is meant for: local
  * development and staging.
  *
@@ -72,9 +72,7 @@ class Plugin extends BasePlugin
     public static function mcpEnabled(): bool
     {
         try {
-            $plugin = self::getInstance();
-            return $plugin !== null
-                && $plugin->getSettings()->mcp
+            return self::getInstance()->getSettings()->mcp
                 && Craft::$app->getConfig()->getGeneral()->allowAdminChanges;
         } catch (\Throwable) {
             return false;
@@ -82,8 +80,8 @@ class Plugin extends BasePlugin
     }
 
     /**
-     * Craft's MCP server (Craft 5.12+): the `component-map.*` tools, two
-     * checks in `content-model.audit`, and words in `info.get`. Nothing on an
+     * Craft's MCP server (Craft 6): the `component_map_*` tools, two
+     * checks in `content_model_audit`, and words in `info_get`. Nothing on an
      * older Craft — the classes are only named, never loaded — and nothing on
      * an ordinary request: all of it runs when an MCP server is built.
      *
@@ -92,29 +90,29 @@ class Plugin extends BasePlugin
      */
     private function registerMcp(): void
     {
-        if (!class_exists(\craft\services\Mcp::class)) {
+        // Craft 6: CraftCms\Cms\Mcp. Registration is deferred to the moment
+        // Craft first reads its registries, so settings and request state are
+        // known; a failure is logged and left out.
+        if (!class_exists(\CraftCms\Cms\Mcp\CapabilityRegistry::class)) {
             return;
         }
 
-        // Checks have no event of their own; capability types are collected
-        // once per server, before any tool can run — the audit included.
-        Event::on(
-            \craft\services\Mcp::class,
-            \craft\services\Mcp::EVENT_REGISTER_CAPABILITY_TYPES,
-            static function ($event): void {
-                // Untyped: a handler whose type no longer matches would throw
-                // inside Craft, not here.
-                if (!$event instanceof \craft\events\RegisterComponentTypesEvent || !self::mcpEnabled()) {
-                    return;
+        app(\CraftCms\Cms\Mcp\CapabilityRegistry::class)->defer(static function ($registry): void {
+            try {
+                if (self::mcpEnabled() && McpCompat::toolsFit()) {
+                    $registry->register(Tools::class);
                 }
-                if (McpCompat::toolsFit()) {
-                    $event->types[] = Tools::class;
-                }
-                if (!McpCompat::checkFits()) {
-                    return;
-                }
+            } catch (\Throwable $e) {
+                McpCompat::warn('its tools', $e);
+            }
+        });
+
+        if (class_exists(\CraftCms\Cms\Mcp\ContentModel\CheckRegistry::class)) {
+            app(\CraftCms\Cms\Mcp\ContentModel\CheckRegistry::class)->defer(static function ($checks): void {
                 try {
-                    $checks = Craft::$app->get('mcp')->getCheckRegistry();
+                    if (!self::mcpEnabled() || !McpCompat::checkFits()) {
+                        return;
+                    }
                     $ids = $checks->ids();
                     foreach ([BrokenReferencesCheck::class, BlocksWithoutTemplateCheck::class] as $check) {
                         if (!in_array($check::id(), $ids, true)) {
@@ -124,18 +122,18 @@ class Plugin extends BasePlugin
                 } catch (\Throwable $e) {
                     McpCompat::warn('its content-model checks', $e);
                 }
-            }
-        );
+            });
+        }
 
-        // Full instructions: info.get, users with control-panel access only.
-        Event::on(
-            \craft\mcp\AdminInstructions::class,
-            \craft\mcp\AdminInstructions::EVENT_COLLECT_INSTRUCTIONS,
-            static function ($event): void {
-                if (!$event instanceof \craft\mcp\events\CollectingAdminInstructions || !self::mcpEnabled()) {
+        // Full instructions: info_get, users with control-panel access only.
+        \Illuminate\Support\Facades\Event::listen(
+            \CraftCms\Cms\Mcp\Events\CollectingAdminInstructions::class,
+            static function (\CraftCms\Cms\Mcp\Events\CollectingAdminInstructions $event): void {
+                if (!self::mcpEnabled()) {
                     return;
                 }
                 try {
+                    // Through the adapter, as Tools does: Craft 6 answers it with its Gate.
                     if (!Craft::$app->getUser()->checkPermission('accessCp')) {
                         return;
                     }
@@ -149,20 +147,19 @@ class Plugin extends BasePlugin
                 } catch (\Throwable $e) {
                     Craft::warning('Component Map could not add its MCP instructions: ' . $e->getMessage(), 'component-map');
                 }
-            }
+            },
         );
 
         // Every client gets these, with or without control-panel access: one
         // harmless line, no paths, no entries.
-        Event::on(
-            \craft\mcp\AdminInstructions::class,
-            \craft\mcp\AdminInstructions::EVENT_COLLECT_SERVER_INSTRUCTIONS,
-            static function ($event): void {
-                if (!$event instanceof \craft\mcp\events\CollectingServerInstructions || !self::mcpEnabled() || !McpCompat::toolsFit()) {
+        \Illuminate\Support\Facades\Event::listen(
+            \CraftCms\Cms\Mcp\Events\CollectingServerInstructions::class,
+            static function (\CraftCms\Cms\Mcp\Events\CollectingServerInstructions $event): void {
+                if (!self::mcpEnabled() || !McpCompat::toolsFit()) {
                     return;
                 }
                 $event->instructions[] = McpBrief::SERVER_LINE;
-            }
+            },
         );
     }
 

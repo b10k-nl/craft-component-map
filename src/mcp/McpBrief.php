@@ -3,7 +3,7 @@
 namespace b10k\componentmap\mcp;
 
 /**
- * Component Map's words for Craft's MCP server: the instructions in `info.get`
+ * Component Map's words for Craft's MCP server: the instructions in `info_get`
  * (what this project's templates look like, which tool to use when) and the
  * one line every client gets on connecting.
  *
@@ -15,7 +15,7 @@ final class McpBrief
     public const CHECK_BLOCKS_WITHOUT_TEMPLATE = 'component-map-blocks-without-template';
 
     /** Short and harmless: every client gets it, with or without control-panel access. */
-    public const SERVER_LINE = 'Component Map: the `component-map.*` tools map this site\'s Twig templates to its pages and page-builder blocks, and tell what a template change affects. Details in `info.get`.';
+    public const SERVER_LINE = 'Component Map: the `component_map_*` tools map this site\'s Twig templates to its pages and page-builder blocks, and tell what a template change affects. Details in `info_get`.';
 
     /**
      * @param array<string, mixed> $overview Explorer::overview()
@@ -47,9 +47,9 @@ final class McpBrief
         }
 
         if ($tools) {
-            $lines[] = 'Before changing a template, block or section: `component-map.show`. After changing files: `component-map.impact` with the files'
+            $lines[] = 'Before changing a template, block or section: `component_map_show`. After changing files: `component_map_impact` with the files'
                 . ($entries ? ' — it returns the entries to open in a browser, with URLs' : '')
-                . '. Before deleting: `component-map.unused` (candidates, not a delete list). A first look: `component-map.overview`.';
+                . '. Before deleting: `component_map_unused` (candidates, not a delete list). A first look: `component_map_overview`.';
         }
 
         $blind = (int)($overview['notResolved']['total'] ?? 0);

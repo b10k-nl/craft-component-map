@@ -5,14 +5,14 @@ namespace b10k\componentmap\mcp;
 use b10k\componentmap\Plugin;
 use b10k\componentmap\services\ReportException;
 use Craft;
-use craft\mcp\attributes\RequiresPermission;
+use CraftCms\Cms\Mcp\Attributes\RequiresPermission;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
 use Mcp\Exception\ToolCallException;
 use Mcp\Schema\ToolAnnotations;
 
 /**
- * Component Map's tools on Craft's MCP server (Craft 5.12+): how the site's
+ * Component Map's tools on Craft's MCP server (Craft 6): how the site's
  * Twig templates fit together and with the content model, and what a change
  * affects — what an agent cannot learn from Craft's own tools, which do not
  * see templates.
@@ -29,14 +29,14 @@ class Tools
     private const FILES_SCHEMA = [
         'type' => 'array',
         'items' => ['type' => 'string'],
-        'description' => 'Files you changed: templates (`_blocks/hero.twig`, `templates/_blocks/hero.twig`), project config files (`config/project/entryTypes/hero--….yaml`), anything else. Deleted files count too.',
+        'description' => 'Files you changed: templates (`_blocks/hero.twig`, `resources/views/_blocks/hero.twig`), project config files (`config/project/entryTypes/hero--….yaml`), anything else. Deleted files count too.',
     ];
 
     /**
      * @return array<string, mixed>
      */
     #[McpTool(
-        name: 'component-map.overview',
+        name: 'component_map_overview',
         description: 'The site\'s templates at a glance: each section\'s page template, the dispatchers that render page-builder blocks, the template each block type is rendered by (and how many entries use it), and the references the map cannot follow. A good first call before working on templates.',
         annotations: new ToolAnnotations(readOnlyHint: true),
     )]
@@ -52,13 +52,13 @@ class Tools
      * @return array<string, mixed>
      */
     #[McpTool(
-        name: 'component-map.show',
+        name: 'component_map_show',
         description: 'Everything the map knows about one template, block (entry type), section or Matrix field: which templates use it and which it uses (with line numbers), the template a block is rendered by and through which dispatcher, the blocks and pages a change to it affects, and the entries a block is on, with URLs.',
         annotations: new ToolAnnotations(readOnlyHint: true),
     )]
     #[RequiresPermission('accessCp')]
     public function show(
-        #[Schema(description: 'A template path (`_blocks/hero`, `_blocks/hero.twig`, `templates/_blocks/hero.twig`), or the handle of an entry type, section or Matrix field.')]
+        #[Schema(description: 'A template path (`_blocks/hero`, `_blocks/hero.twig`, `resources/views/_blocks/hero.twig`), or the handle of an entry type, section or Matrix field.')]
         string $query,
         #[Schema(description: 'Most entries to list. Default 15.', minimum: 1, maximum: 500)]
         int $limit = 15,
@@ -67,7 +67,7 @@ class Tools
             $result = $plugin->getReports()->show($query, $limit, true);
             if ($result === null) {
                 throw new ToolCallException(sprintf(
-                    'Nothing called “%s” in the map. Give a template path relative to templates/, or an entry type, section or Matrix field handle — component-map.overview lists them.',
+                    'Nothing called “%s” in the map. Give a template path relative to resources/views/, or an entry type, section or Matrix field handle — component_map_overview lists them.',
                     $query,
                 ));
             }
@@ -79,7 +79,7 @@ class Tools
      * @return array<string, mixed>
      */
     #[McpTool(
-        name: 'component-map.impact',
+        name: 'component_map_impact',
         description: 'What changing these files affects: the templates above them, the page-builder blocks rendered through them, the pages that reach them (`wholePages`: every entry of the section, not only those with a block), and `entriesToCheck` — the entries to open in a browser, with URLs. Project config changes count through the content model; deleted templates through whatever still references them. Files that are not templates are listed as `unmapped`.',
         annotations: new ToolAnnotations(readOnlyHint: true),
     )]
@@ -102,7 +102,7 @@ class Tools
      * @return array<string, mixed>
      */
     #[McpTool(
-        name: 'component-map.unused',
+        name: 'component_map_unused',
         description: 'What nothing uses: block types no entry contains, templates nothing reaches (whole dead chains included), entry types in no section or Matrix field, and Matrix fields on no entry type. Candidates, not a delete list: templates rendered from PHP, routes or plugins are not seen, and `runtime` lists includes chosen at runtime that could reach anything.',
         annotations: new ToolAnnotations(readOnlyHint: true),
     )]

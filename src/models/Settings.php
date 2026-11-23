@@ -30,8 +30,8 @@ class Settings extends Model
     public bool $readEntries = true;
 
     /**
-     * @var bool Offer the `component-map.*` tools, the content-model checks
-     * and the `info.get` instructions on Craft's MCP server (Craft 5.12+).
+     * @var bool Offer the `component_map_*` tools, the content-model checks
+     * and the `info_get` instructions on Craft's MCP server (Craft 6).
      * Only where allowAdminChanges is on, whatever this says.
      */
     public bool $mcp = true;

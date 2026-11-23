@@ -20,7 +20,7 @@ return [
     // `impact` and `show`. Read-only. false = templates and schema only.
     'readEntries' => true,
 
-    // Tools, audit checks and instructions on Craft's MCP server (Craft 5.12+),
+    // Tools, audit checks and instructions on Craft's MCP server (Craft 6),
     // only where allowAdminChanges is on. false = none at all.
     'mcp' => true,
 

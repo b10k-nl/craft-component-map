@@ -21,7 +21,7 @@ class McpBriefTest extends TestCase
         $this->assertStringContainsString('This site: 15 templates, 2 sections, 2 Matrix fields.', $text);
         $this->assertStringContainsString('rendered by `_blocks.twig` through `_adapters/*.twig`', $text);
         $this->assertStringContainsString(': cardsGrid, hero.', $text);
-        $this->assertStringContainsString('`component-map.impact`', $text);
+        $this->assertStringContainsString('`component_map_impact`', $text);
         $this->assertStringContainsString('entries to open in a browser', $text);
         $this->assertStringContainsString('2 references it cannot follow', $text);
     }
@@ -30,7 +30,7 @@ class McpBriefTest extends TestCase
     {
         $text = McpBrief::text($this->overview(), false, false);
 
-        $this->assertStringNotContainsString('component-map.impact', $text);
+        $this->assertStringNotContainsString('component_map_impact', $text);
         $this->assertStringContainsString('Not in the map:', $text);
 
         $none = McpBrief::text(['counts' => ['templates' => 1, 'sections' => 1, 'matrixFields' => 0], 'dispatchers' => [], 'notResolved' => ['total' => 0]], true, false);
@@ -42,6 +42,6 @@ class McpBriefTest extends TestCase
     public function testServerLineIsShortAndNamesNoPaths(): void
     {
         $this->assertLessThan(250, strlen(McpBrief::SERVER_LINE));
-        $this->assertStringNotContainsString('/', str_replace('`component-map.*`', '', McpBrief::SERVER_LINE));
+        $this->assertStringNotContainsString('/', str_replace('`component_map_*`', '', McpBrief::SERVER_LINE));
     }
 }

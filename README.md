@@ -7,7 +7,7 @@ the content model in the control panel. Component Map puts it in one place —
 for you, and for the coding agent that is about to edit your templates.
 
 ```
-$ php craft component-map/show _blocks/hero
+$ php artisan craft:component-map:show _blocks/hero
 
 _blocks/hero.twig  (template)
 
@@ -61,20 +61,21 @@ listed under **Not resolved**, not silently dropped.
 
 ## Requirements
 
-Craft CMS 5, PHP 8.2+. Nothing else — no Node.
+Craft CMS 6 (beta) with the Yii2 adapter, PHP 8.5+. Nothing else — no Node.
+For Craft 5, use the 1.x line of this plugin.
 
 ## Installation
 
 ```bash
 composer require b10k/craft-component-map
-php craft plugin/install component-map
-php craft component-map/agents --file=AGENTS.md    # optional: tell your coding agent
+php artisan craft:plugin:install component-map
+php artisan craft:component-map:agents --file=AGENTS.md    # optional: tell your coding agent
 ```
 
 Read-only: it reads templates, the content model and which entries contain
 which blocks (canonical content only — no drafts or revisions; turn it off
 with `readEntries`), and writes only to `storage/` (and to `AGENTS.md` when you
-ask it to). It works from the console and, on Craft 5.12+, as read-only tools
+ask it to). It works from the console and, on Craft 6, as read-only tools
 on Craft's MCP server — both meant for where you and your coding agent edit
 templates: local development and staging. On an environment with
 `allowAdminChanges` off (production, as a rule) Component Map offers nothing
@@ -84,11 +85,11 @@ on the MCP server.
 
 | Command | What it does |
 |---|---|
-| `component-map/show <query>` | Where a template, entry type, section or Matrix field is used, what it uses, and for a block the entries it is on. `<query>` can be `_blocks/hero`, `templates/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
-| `component-map/impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes; `--since=main` everything that changed on your branch, committed or not. `--json`. |
-| `component-map/unused` | What nothing uses: blocks no entry contains, templates nothing reaches, entry types and Matrix fields attached nowhere. `--json`. |
-| `component-map/build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
-| `component-map/agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
+| `craft:component-map:show <query>` | Where a template, entry type, section or Matrix field is used, what it uses, and for a block the entries it is on. `<query>` can be `_blocks/hero`, `resources/views/_blocks/hero.twig`, `hero` (entry type) or `home` (section). `--json`. |
+| `craft:component-map:impact <files>` | What changing these files affects: templates above them, blocks rendered through them, pages that reach them. `--git` uses your uncommitted changes; `--since=main` everything that changed on your branch, committed or not. `--json`. |
+| `craft:component-map:unused` | What nothing uses: blocks no entry contains, templates nothing reaches, entry types and Matrix fields attached nowhere. `--json`. |
+| `craft:component-map:build` | The whole map: `--stdout` prints it as Markdown, `--json` as a graph. Without either, writes both to `storage/component-map/` (a local snapshot, not for committing). |
+| `craft:component-map:agents` | Prints the note that points a coding agent to these commands; `--file=AGENTS.md` (or `CLAUDE.md`) adds it to that file, or updates it. |
 
 `show` and `impact` read the templates on every call — there is nothing to
 rebuild first.
@@ -98,7 +99,7 @@ Exit codes: `0` ok · `1` not found · `2` could not run.
 ### Impact
 
 ```
-$ php craft component-map/impact --git
+$ php artisan craft:component-map:impact --git
 
 Blocks (entry types) affected
   cardsGrid
@@ -148,7 +149,7 @@ Before you open a pull request, check the whole branch — what you committed
 and what you have not yet:
 
 ```bash
-php craft component-map/impact --since=main
+php artisan craft:component-map:impact --since=main
 ```
 
 It compares with the point where your branch left `main`, so work merged into
@@ -159,7 +160,7 @@ The list of blocks and pages is what to check in the browser.
 ### Unused
 
 ```
-$ php craft component-map/unused
+$ php artisan craft:component-map:unused
 
 Blocks no entry uses (7)
   card           allowed in gridCards
@@ -200,7 +201,7 @@ tests blocks in a browser by entry type handle, `impact` prints the command
 to test exactly the affected blocks, and you can chain them:
 
 ```bash
-php craft component-check/test $(php craft component-map/impact --since=main --json | jq -r '.entryTypes | join(",")')
+php artisan craft:component-check:test $(php artisan craft:component-map:impact --since=main --json | jq -r '.entryTypes | join(",")')
 ```
 
 ## For coding agents
@@ -209,34 +210,34 @@ The map is not a file in your repository, so an agent will not find it by
 searching. Tell it once:
 
 ```bash
-php craft component-map/agents --file=AGENTS.md    # or CLAUDE.md
+php artisan craft:component-map:agents --file=AGENTS.md    # or CLAUDE.md
 ```
 
 That adds a short note — between `<!-- component-map -->` markers, so running
 it again updates it instead of adding a second copy — telling the agent to run
-`show` before editing a template and `impact --git` after. It uses `ddev craft`
+`show` before editing a template and `impact --git` after. It uses `ddev artisan`
 when the project runs in DDEV. The note does not change when your templates
 do, so it is safe to commit. The full instructions are in
 [AGENTS.md](AGENTS.md) in this package.
 
-### On Craft's MCP server (Craft 5.12+)
+### On Craft's MCP server (Craft 6)
 
-Craft 5.12 ships an MCP server, so an agent connected to your site can use
+Craft 6 ships an MCP server, so an agent connected to your site can use
 the map without a terminal. Component Map adds:
 
 | Tool | What it returns |
 |---|---|
-| `component-map.overview` | Each section's page template, the dispatchers that render page-builder blocks, the template each block type is rendered by and how many entries use it, and what the map cannot follow. A good first call. |
-| `component-map.show` | One template, block, section or Matrix field — as `show --json`. |
-| `component-map.impact` | What changing these files affects, with the entries to check — as `impact --json`. `files`, or `git: true`, or `since: "main"` (the last two need a git checkout where Craft runs). |
-| `component-map.unused` | As `unused --json`. |
+| `component_map_overview` | Each section's page template, the dispatchers that render page-builder blocks, the template each block type is rendered by and how many entries use it, and what the map cannot follow. A good first call. |
+| `component_map_show` | One template, block, section or Matrix field — as `show --json`. |
+| `component_map_impact` | What changing these files affects, with the entries to check — as `impact --json`. `files`, or `git: true`, or `since: "main"` (the last two need a git checkout where Craft runs). |
+| `component_map_unused` | As `unused --json`. |
 
 All read only (`readOnlyHint`, so the `mcp:read` scope is enough), for users
 with control-panel access. Entries a user may not view are counted, not
 listed. The map is built afresh on every call, so a long-running stdio server
 never answers from yesterday's templates.
 
-It also adds two checks to `content-model.audit` — only the certain cases:
+It also adds two checks to `content_model_audit` — only the certain cases:
 
 - `component-map-broken-references` — a template that includes, embeds or
   extends one that does not exist (`ignore missing`, and a fallback list with
@@ -245,7 +246,7 @@ It also adds two checks to `content-model.audit` — only the certain cases:
   field allows that has no template named after it, so it falls back or
   renders nothing.
 
-And a few lines to `info.get`: this project's dispatchers and which tool to
+And a few lines to `info_get`: this project's dispatchers and which tool to
 use when, so an agent knows the convention before it opens a template.
 
 Only where `allowAdminChanges` is on, and the `mcp` setting can switch it all
@@ -263,8 +264,8 @@ keeps answering.
 | `jsonFile` | `@storage/component-map/graph.json` | Where `build` writes JSON. Empty = do not write it |
 | `readEntries` | `true` | List the entries that contain affected blocks. `false` = templates and schema only |
 | `entryPoints` | `[]` | Globs of templates rendered from outside Twig (PHP, routes, plugins), so `unused` does not report them, e.g. `['_emails/*']` |
-| `mcp` | `true` | Tools, audit checks and instructions on Craft's MCP server (Craft 5.12+) — only where `allowAdminChanges` is on. `false` = none |
-| `ignore` | `['*.stories.twig']` | Glob patterns (relative to `templates/`) to leave out |
+| `mcp` | `true` | Tools, audit checks and instructions on Craft's MCP server (Craft 6) — only where `allowAdminChanges` is on. `false` = none |
+| `ignore` | `['*.stories.twig']` | Glob patterns (relative to the templates folder, `resources/views/` on Craft 6) to leave out |
 
 ## Limitations
 

@@ -237,7 +237,7 @@ class GraphTest extends TestCase
         $this->assertStringContainsString('- a change affects: blocks `cardsGrid`, `hero`; pages `home`, `news`', $md);
         $this->assertStringContainsString('## Not resolved', $md);
         $this->assertStringContainsString(' · 2 sections · 2 Matrix fields · 5 entry types', $md);
-        $this->assertStringContainsString('php craft component-map/impact --git', $md);
-        $this->assertStringContainsString('ddev craft component-map/impact --git', $writer->write($this->graph(), '', 'ddev craft'));
+        $this->assertStringContainsString('php artisan craft:component-map:impact --git', $md);
+        $this->assertStringContainsString('ddev artisan craft:component-map:impact --git', $writer->write($this->graph(), '', 'ddev artisan'));
     }
 }

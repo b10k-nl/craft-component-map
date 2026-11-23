@@ -3,13 +3,13 @@
 namespace b10k\componentmap\mcp;
 
 use b10k\componentmap\Plugin;
-use craft\mcp\contentmodel\Check;
+use CraftCms\Cms\Mcp\ContentModel\Check;
 
 /**
  * A block type a Matrix field allows, in a field whose other blocks each have
  * a template named after them — but this one has none, so the dispatcher
  * falls back, or renders nothing. As a check of Craft's
- * `content-model.audit` (Craft 5.12+).
+ * `content_model_audit` (Craft 6).
  *
  * Only loaded when Craft has MCP: Plugin registers it behind a class_exists().
  */

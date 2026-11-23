@@ -3,6 +3,23 @@
 All notable changes to Component Map are documented here. This project adheres
 to [Semantic Versioning](https://semver.org).
 
+## 6.0.0-beta.1 - Unreleased
+
+Version numbers now follow Craft: **6.x is for Craft 6**, the 1.x line stays
+on Craft 5 and keeps getting fixes.
+
+### Changed
+
+- **Craft 6 (beta).** Requires Craft 6 with the Yii2 adapter and PHP 8.5.
+- Commands are Artisan commands: `php artisan craft:component-map:show`
+  (`ddev artisan …` on DDEV), also in the AGENTS.md note, the map's header and
+  the "Test them" line of `impact`. The overview is `craft:component-map:default`.
+- Craft's MCP server is Craft 6's. Tool names follow Craft 6:
+  `component_map_overview`, `component_map_show`, `component_map_impact`,
+  `component_map_unused`; the checks are in `content_model_audit`, the
+  instructions in `info_get`.
+- Templates live in `resources/views` on Craft 6; paths are relative to it.
+
 ## 1.2.0 - 2026-11-08
 
 ### Added

@@ -6,23 +6,23 @@ delete a Twig template.
 
 ## Through Craft's MCP server
 
-If you are connected to the site's MCP server (Craft 5.12+), use the tools
+If you are connected to the site's MCP server (Craft 6), use the tools
 instead of the commands below — same answers, same JSON:
-`component-map.overview` (a first look), `component-map.show`,
-`component-map.impact` (pass `files`, or `git: true`, or `since: "main"`) and
-`component-map.unused`. `info.get` tells you this project's dispatchers. The
+`component_map_overview` (a first look), `component_map_show`,
+`component_map_impact` (pass `files`, or `git: true`, or `since: "main"`) and
+`component_map_unused`. `info_get` tells you this project's dispatchers. The
 tools exist only where `allowAdminChanges` is on.
 
 ## Before you edit
 
-Use `ddev craft` instead of `php craft` if the project runs in DDEV. Every
+Use `ddev artisan` instead of `php artisan` if the project runs in DDEV. Every
 command reads the templates as they are now; there is no map file to find or
 rebuild first.
 
 1. **For an overview**, print the whole map:
 
    ```bash
-   php craft component-map/build --stdout
+   php artisan craft:component-map:build --stdout
    ```
 
    It lists which template renders each page and each page-builder block, and
@@ -31,7 +31,7 @@ rebuild first.
 2. **Ask about the template you are about to touch:**
 
    ```bash
-   php craft component-map/show _components/button --json
+   php artisan craft:component-map:show _components/button --json
    ```
 
    - `usedBy` — every template that includes, embeds or extends it. Changing
@@ -48,11 +48,11 @@ rebuild first.
 3. **Check what you changed affects:**
 
    ```bash
-   php craft component-map/impact --git --json
+   php artisan craft:component-map:impact --git --json
    ```
 
    Before the work is handed over as a branch or pull request, check the whole
-   branch instead: `php craft component-map/impact --since=main --json`
+   branch instead: `php artisan craft:component-map:impact --since=main --json`
    (committed and uncommitted changes since the branch left `main`).
 
    Report `entryTypes` and `pages` to the human, and give them the URLs in
@@ -61,7 +61,7 @@ rebuild first.
    page is affected). `deleted` lists templates that are gone; the templates that
    still reference them are in `templates` and will fail to render. If
    Component Check is installed, test exactly those blocks:
-   `php craft component-check/test <entryTypes joined by commas> --json`.
+   `php artisan craft:component-check:test <entryTypes joined by commas> --json`.
 
 4. **`contentModel`** lists entry types, Matrix fields and sections changed in
    project config; their blocks and pages are already in `entryTypes` and
@@ -73,7 +73,7 @@ rebuild first.
 
 ## Before you delete
 
-Run `php craft component-map/unused --json` for candidates, and
+Run `php artisan craft:component-map:unused --json` for candidates, and
 `show <template> --json` for the one you are about to remove: an empty
 `usedBy` is not proof on its own — templates rendered from PHP, routes or
 plugin settings are not in the map, and `runtime` lists includes chosen at

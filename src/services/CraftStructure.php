@@ -5,7 +5,7 @@ namespace b10k\componentmap\services;
 use Craft;
 use craft\base\Component;
 use CraftCms\Cms\Field\Matrix;
-use craft\models\EntryType;
+use CraftCms\Cms\Entry\Data\EntryType;
 
 /**
  * Reads the parts of the Craft content model the map needs — sections, entry
