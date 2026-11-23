@@ -20,6 +20,11 @@ on Craft 5 and keeps getting fixes.
   instructions in `info_get`.
 - Templates live in `resources/views` on Craft 6; paths are relative to it.
 
+### Fixed
+
+- A single without a title is named after its section again, not its slug — on
+  Craft 6 the section type is an enum, and the old comparison never matched.
+
 ## 1.2.0 - 2026-11-08
 
 ### Added
